@@ -10,7 +10,9 @@ data class FilePaneState(
     var isStarred: Boolean = false,
     val history: MutableList<String> = mutableListOf(""),
     var historyIndex: Int = 0,
-    var files: List<io.nggit.model.FileInfo> = emptyList()
+    var files: List<io.nggit.model.FileInfo> = emptyList(),
+    var sortMode: SortMode = SortMode.NAME_ASC,
+    var showHidden: Boolean = false
 ) {
     fun canGoBack(): Boolean = historyIndex > 0
     fun canGoForward(): Boolean = historyIndex < history.size - 1
@@ -45,4 +47,8 @@ data class FilePaneState(
         }
         return if (currentPath.isEmpty()) "/" else "/$currentPath"
     }
+}
+
+enum class SortMode {
+    NAME_ASC, NAME_DESC, SIZE_ASC, SIZE_DESC
 }

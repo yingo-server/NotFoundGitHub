@@ -265,11 +265,8 @@ class MainActivity : AppCompatActivity() {
                     if (files.isEmpty()) {
                         showEmpty(pane, getString(R.string.file_dir_empty))
                     } else {
-                        val sorted = files.sortedWith(
-                            compareBy<FileInfo> { !it.isDir() }.thenBy { it.name.lowercase() }
-                        )
-                        pane.files = sorted
-                        getAdapter(pane).updateData(sorted)
+                        pane.files = sortAndFilter(pane, files)
+                        getAdapter(pane).updateData(pane.files)
                         updatePaneViews(pane)
                     }
                 }
@@ -283,6 +280,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun sortAndFilter(pane: FilePaneState, files: List<FileInfo>): List<FileInfo> {
+        var result = files
+        if (!pane.showHidden) {
+            result = result.filter { !it.name.startsWith(".") }
+        }
+        return when (pane.sortMode) {
+            SortMode.NAME_ASC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenBy { it.name.lowercase() })
+            SortMode.NAME_DESC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenByDescending { it.name.lowercase() })
+            SortMode.SIZE_ASC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenBy { it.size })
+            SortMode.SIZE_DESC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenByDescending { it.size })
+        }
+    }
+
     private fun loadLocalFiles() {
         rightSwipe.isRefreshing = false
         updatePaneViews(rightState)
@@ -291,7 +301,6 @@ class MainActivity : AppCompatActivity() {
         else File(basePath, rightState.currentPath)
         val items = mutableListOf<FileInfo>()
         currentDir.listFiles()?.forEach { file ->
-            if (file.name.startsWith(".")) return@forEach
             val type = if (file.isDirectory) "dir" else "file"
             items.add(FileInfo(
                 name = file.name,
@@ -300,9 +309,7 @@ class MainActivity : AppCompatActivity() {
                 size = if (file.isFile) file.length() else 0
             ))
         }
-        val sorted = items.sortedWith(
-            compareBy<FileInfo> { !it.isDir() }.thenBy { it.name.lowercase() }
-        )
+        val sorted = sortAndFilter(rightState, items)
         rightState.files = sorted
         showLoader(rightState, false)
         if (sorted.isEmpty()) {
@@ -522,7 +529,15 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, 3, 2, "New Folder")
         popup.menu.add(0, 4, 3, "Multi-select")
         popup.menu.add(0, 6, 4, "Delete Selected")
-        popup.menu.add(0, 5, 5, "Refresh")
+        val sortLabel = when (activePane.sortMode) {
+            SortMode.NAME_ASC -> "Sort: Name A-Z"
+            SortMode.NAME_DESC -> "Sort: Name Z-A"
+            SortMode.SIZE_ASC -> "Sort: Size ↑"
+            SortMode.SIZE_DESC -> "Sort: Size ↓"
+        }
+        popup.menu.add(0, 7, 5, sortLabel)
+        popup.menu.add(0, 8, 6, if (activePane.showHidden) "Hide Hidden Files" else "Show Hidden Files")
+        popup.menu.add(0, 5, 7, "Refresh")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> showSearchDialog()
@@ -535,10 +550,31 @@ class MainActivity : AppCompatActivity() {
                     else loadRepos()
                 }
                 6 -> batchDeleteSelected()
+                7 -> cycleSortMode()
+                8 -> toggleHiddenFiles()
             }
             true
         }
         popup.show()
+    }
+
+    private fun cycleSortMode() {
+        activePane.sortMode = when (activePane.sortMode) {
+            SortMode.NAME_ASC -> SortMode.NAME_DESC
+            SortMode.NAME_DESC -> SortMode.SIZE_ASC
+            SortMode.SIZE_ASC -> SortMode.SIZE_DESC
+            SortMode.SIZE_DESC -> SortMode.NAME_ASC
+        }
+        if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) loadRemoteFiles(activePane)
+        else if (!activePane.isRemote) loadLocalFiles()
+        Toast.makeText(this, "Sort: ${activePane.sortMode}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun toggleHiddenFiles() {
+        activePane.showHidden = !activePane.showHidden
+        Toast.makeText(this, if (activePane.showHidden) "Showing hidden files" else "Hiding hidden files", Toast.LENGTH_SHORT).show()
+        if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) loadRemoteFiles(activePane)
+        else if (!activePane.isRemote) loadLocalFiles()
     }
 
     private fun toggleMultiSelectMode() {
