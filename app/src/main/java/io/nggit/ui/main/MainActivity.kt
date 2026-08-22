@@ -521,7 +521,8 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, 2, 1, "New File")
         popup.menu.add(0, 3, 2, "New Folder")
         popup.menu.add(0, 4, 3, "Multi-select")
-        popup.menu.add(0, 5, 4, "Refresh")
+        popup.menu.add(0, 6, 4, "Delete Selected")
+        popup.menu.add(0, 5, 5, "Refresh")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> showSearchDialog()
@@ -533,6 +534,7 @@ class MainActivity : AppCompatActivity() {
                     else if (!activePane.isRemote) loadLocalFiles()
                     else loadRepos()
                 }
+                6 -> batchDeleteSelected()
             }
             true
         }
@@ -546,8 +548,42 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Selection cleared", Toast.LENGTH_SHORT).show()
         } else {
             adapter.toggleMultiSelect(0)
-            Toast.makeText(this, "Multi-select mode ON. Tap to select, long-press to deselect.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Multi-select mode ON. Tap to select.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun batchDeleteSelected() {
+        val adapter = getAdapter(activePane)
+        val selected = adapter.getMultiSelectedFiles()
+        if (selected.isEmpty()) {
+            Toast.makeText(this, "No files selected", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!activePane.isRemote || activePane.repoOwner.isEmpty()) {
+            Toast.makeText(this, "Batch delete only for remote files", Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Batch Delete")
+            .setMessage("Delete ${selected.size} files?")
+            .setPositiveButton(R.string.file_delete) { _, _ ->
+                var completed = 0
+                var failed = 0
+                for (file in selected) {
+                    UploadManager(this).deleteFile(activePane.repoOwner, activePane.repoName, activePane.branch, file.path, file.sha) { success ->
+                        runOnUiThread {
+                            completed++
+                            if (!success) failed++
+                            if (completed == selected.size) {
+                                adapter.clearSelection()
+                                loadRemoteFiles(activePane)
+                                Toast.makeText(this, "${completed - failed} deleted, $failed failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun showSearchDialog() {
