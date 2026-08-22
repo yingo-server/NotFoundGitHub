@@ -1,0 +1,137 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: '更新日志 (Changelog)'
+        required: true
+        default: '新版本发布'
+      version_name:
+        description: '版本名称 (如 1.0.1)'
+        required: false
+        default: ''
+      version_code:
+        description: '版本号 (数字，如 2)'
+        required: false
+        default: ''
+
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_NAME="${{ github.event.inputs.version_name }}"
+            VERSION_CODE="${{ github.event.inputs.version_code }}"
+            CHANGELOG="${{ github.event.inputs.changelog }}"
+          else
+            VERSION_NAME="${GITHUB_REF#refs/tags/v}"
+            VERSION_CODE="${{ github.run_number }}"
+            CHANGELOG="Release $VERSION_NAME"
+          fi
+
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME="1.0.${{ github.run_number }}"
+          fi
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE="${{ github.run_number }}"
+          fi
+
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Update version in build.gradle
+        run: |
+          sed -i "s/versionName \".*\"/versionName \"${{ steps.version.outputs.version_name }}\"/" app/build.gradle
+          sed -i "s/versionCode [0-9]*/versionCode ${{ steps.version.outputs.version_code }}/" app/build.gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Get APK paths
+        id: apk
+        run: |
+          DEBUG_APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          RELEASE_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "debug=$DEBUG_APK" >> $GITHUB_OUTPUT
+          echo "release=$RELEASE_APK" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog file
+        run: |
+          echo "${{ steps.version.outputs.changelog }}" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "---" >> CHANGELOG.md
+          echo "Version: ${{ steps.version.outputs.version_name }}" >> CHANGELOG.md
+          echo "Build: ${{ steps.version.outputs.version_code }}" >> CHANGELOG.md
+          echo "Date: $(date +'%Y-%m-%d %H:%M:%S')" >> CHANGELOG.md
+
+      - name: Upload Debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGGit-debug-${{ steps.version.outputs.version_name }}
+          path: ${{ steps.apk.outputs.debug }}
+
+      - name: Upload Release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGGit-release-${{ steps.version.outputs.version_name }}
+          path: ${{ steps.apk.outputs.release }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "NGGit v${{ steps.version.outputs.version_name }}"
+          body: |
+            ## 更新日志
+
+            ${{ steps.version.outputs.changelog }}
+
+            ---
+
+            **版本**: ${{ steps.version.outputs.version_name }}
+            **构建号**: ${{ steps.version.outputs.version_code }}
+            **构建时间**: ${{ github.event.head_commit.timestamp }}
+
+            ### 下载
+
+            - 📦 **Debug APK**: `NGGit-debug-${{ steps.version.outputs.version_name }}.apk` (可直接安装，含调试信息)
+            - 📦 **Release APK**: `NGGit-release-${{ steps.version.outputs.version_name }}.apk` (发布版本)
+          files: |
+            ${{ steps.apk.outputs.debug }}
+            ${{ steps.apk.outputs.release }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

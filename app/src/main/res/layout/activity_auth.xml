@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@color/background">
+
+    <ImageView
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@drawable/ic_github"
+        android:layout_marginBottom="24dp"
+        app:tint="@color/text_primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NG Git"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GitHub Mobile Workbench"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="40dp" />
+
+    <LinearLayout
+        android:id="@+id/password_section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/password_input"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="输入应用密码"
+            android:inputType="textPassword"
+            android:background="@drawable/bg_input"
+            android:paddingHorizontal="16dp"
+            android:textSize="14sp"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/password_confirm_btn"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="确认"
+            android:background="@drawable/bg_button_primary"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/token_input"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="输入 Access Token (ghp_...)"
+        android:inputType="textPassword"
+        android:background="@drawable/bg_input"
+        android:paddingHorizontal="16dp"
+        android:textSize="13sp"
+        android:fontFamily="monospace"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/login_btn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="令牌登录"
+        android:background="@drawable/bg_button_secondary"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/oauth_btn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="GitHub 授权登录"
+        android:background="@drawable/bg_button_primary"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp" />
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="加载中..."
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone" />
+
+</LinearLayout>
