@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_search -> { showSearchDialog(); true }
-                R.id.action_settings -> { showMoreMenu(toolbar); true }
+                R.id.action_settings -> { showSettingsDialog(); true }
                 else -> false
             }
         }
@@ -609,6 +609,38 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showSettingsDialog() {
+        val userLogin = AuthManager.getUserLogin() ?: "Unknown"
+        val sb = StringBuilder()
+        sb.appendLine("NGGit v1.0.0")
+        sb.appendLine("GitHub File Manager")
+        sb.appendLine()
+        sb.appendLine("Logged in as: $userLogin")
+        sb.appendLine("Token: ${token.take(8)}...")
+        sb.appendLine()
+        sb.appendLine("Left pane sort: ${leftState.sortMode}")
+        sb.appendLine("Right pane sort: ${rightState.sortMode}")
+        sb.appendLine("Show hidden: ${activePane.showHidden}")
+
+        AlertDialog.Builder(this)
+            .setTitle("Settings")
+            .setMessage(sb.toString())
+            .setNeutralButton("Logout") { _, _ ->
+                AlertDialog.Builder(this)
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to logout?")
+                    .setPositiveButton(R.string.confirm) { _, _ ->
+                        AuthManager.logout(this)
+                        startActivity(Intent(this, AuthActivity::class.java))
+                        finish()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+            }
+            .setPositiveButton(R.string.ok, null)
             .show()
     }
 
