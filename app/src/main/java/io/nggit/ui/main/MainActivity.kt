@@ -537,7 +537,8 @@ class MainActivity : AppCompatActivity() {
         }
         popup.menu.add(0, 7, 5, sortLabel)
         popup.menu.add(0, 8, 6, if (activePane.showHidden) "Hide Hidden Files" else "Show Hidden Files")
-        popup.menu.add(0, 5, 7, "Refresh")
+        popup.menu.add(0, 9, 8, "Create Repo")
+        popup.menu.add(0, 5, 9, "Refresh")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> showSearchDialog()
@@ -552,6 +553,7 @@ class MainActivity : AppCompatActivity() {
                 6 -> batchDeleteSelected()
                 7 -> cycleSortMode()
                 8 -> toggleHiddenFiles()
+                9 -> showCreateRepoDialog()
             }
             true
         }
@@ -575,6 +577,39 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, if (activePane.showHidden) "Showing hidden files" else "Hiding hidden files", Toast.LENGTH_SHORT).show()
         if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) loadRemoteFiles(activePane)
         else if (!activePane.isRemote) loadLocalFiles()
+    }
+
+    private fun showCreateRepoDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 20)
+        }
+        val nameInput = EditText(this).apply { hint = getString(R.string.create_repo_name); setPadding(0, 0, 0, 16) }
+        val descInput = EditText(this).apply { hint = getString(R.string.create_repo_desc) }
+        layout.addView(nameInput)
+        layout.addView(descInput)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.create_repo_title)
+            .setView(layout)
+            .setPositiveButton(R.string.confirm) { _, _ ->
+                val name = nameInput.text.toString().trim()
+                val desc = descInput.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    executor.execute {
+                        val result = api.createRepo(token, name, desc, false)
+                        mainHandler.post {
+                            if (result != null) {
+                                Toast.makeText(this, getString(R.string.create_repo_success), Toast.LENGTH_SHORT).show()
+                                loadRepos()
+                            } else {
+                                Toast.makeText(this, getString(R.string.create_repo_fail), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun toggleMultiSelectMode() {
