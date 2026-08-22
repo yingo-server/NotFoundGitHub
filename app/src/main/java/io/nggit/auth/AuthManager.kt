@@ -1,4 +1,4 @@
-﻿package io.nggit.auth
+package io.nggit.auth
 
 import android.content.Context
 import android.content.SharedPreferences

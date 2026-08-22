@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.main
+package io.nggit.ui.main
 
 data class FilePaneState(
     var paneId: Int = 0,

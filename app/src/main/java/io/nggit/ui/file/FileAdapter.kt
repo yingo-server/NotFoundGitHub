@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.file
+package io.nggit.ui.file
 
 import android.content.Context
 import android.view.LayoutInflater

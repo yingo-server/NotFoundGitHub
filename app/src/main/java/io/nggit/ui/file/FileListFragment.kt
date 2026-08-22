@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.file
+package io.nggit.ui.file
 
 import android.app.AlertDialog
 import android.os.Bundle

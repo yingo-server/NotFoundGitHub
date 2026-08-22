@@ -328,6 +328,10 @@ class MainActivity : AppCompatActivity() {
         loadRemoteFiles(pane)
     }
 
+    fun enterRepo(owner: String, repo: String, branch: String, isStarred: Boolean) {
+        openRepo(leftState, owner, repo, branch, isStarred)
+    }
+
     fun openRepoByOwner(owner: String, repo: String) {
         val repoInfo = repoInfoMap[repo]
         val isStarred = repoStarredMap[repo] ?: false

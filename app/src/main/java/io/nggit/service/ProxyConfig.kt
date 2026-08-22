@@ -1,4 +1,4 @@
-﻿package io.nggit.service
+package io.nggit.service
 
 import android.content.Context
 import android.content.SharedPreferences

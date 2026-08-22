@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.deploy
+package io.nggit.ui.deploy
 
 import android.app.AlertDialog
 import android.app.ProgressDialog

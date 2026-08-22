@@ -1,4 +1,4 @@
-﻿package io.nggit.service
+package io.nggit.service
 
 import io.nggit.model.*
 import com.google.gson.Gson

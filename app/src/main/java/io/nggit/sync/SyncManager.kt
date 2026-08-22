@@ -1,4 +1,4 @@
-﻿package io.nggit.sync
+package io.nggit.sync
 
 import android.app.AlertDialog
 import android.app.ProgressDialog

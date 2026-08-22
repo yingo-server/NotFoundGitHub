@@ -41,7 +41,7 @@ jobs:
         run: yes | sdkmanager --licenses || true
 
       - name: Install Android SDK components
-        run: sdkmanager "platforms;android-33" "build-tools;33.0.2" || true
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
 
       - name: Determine version
         id: version

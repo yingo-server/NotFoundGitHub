@@ -1,4 +1,4 @@
-﻿package io.nggit.util
+package io.nggit.util
 
 import java.security.MessageDigest
 

@@ -1,4 +1,4 @@
-﻿package io.nggit.sync
+package io.nggit.sync
 
 import android.content.Context
 import android.os.Handler

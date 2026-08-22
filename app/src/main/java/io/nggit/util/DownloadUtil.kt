@@ -1,4 +1,4 @@
-﻿package io.nggit.util
+package io.nggit.util
 
 import io.nggit.App
 import io.nggit.service.ProxyConfig

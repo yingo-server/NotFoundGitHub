@@ -1,4 +1,4 @@
-﻿package io.nggit.sync
+package io.nggit.sync
 
 import android.util.Log
 import io.nggit.model.CommitRecord

@@ -1,4 +1,4 @@
-﻿package io.nggit
+package io.nggit
 
 import android.app.Application
 import android.app.NotificationChannel

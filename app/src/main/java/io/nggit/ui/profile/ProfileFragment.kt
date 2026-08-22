@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.profile
+package io.nggit.ui.profile
 
 import android.app.AlertDialog
 import android.content.Intent

@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.search
+package io.nggit.ui.search
 
 import android.app.Dialog
 import android.os.Bundle
@@ -39,10 +39,14 @@ class SearchDialog : DialogFragment() {
     private var allOwnRepos: List<RepoInfo> = emptyList()
     private var isOwnTab = true
 
-    private var onRepoSelected: ((RepoInfo) -> Unit)? = null
+    private var onRepoSelected: ((String, String) -> Unit)? = null
 
     companion object {
         fun newInstance(): SearchDialog = SearchDialog()
+    }
+
+    fun setOnRepoSelectedListener(listener: (String, String) -> Unit) {
+        onRepoSelected = listener
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -176,7 +180,7 @@ class SearchDialog : DialogFragment() {
                 mainActivity.enterRepo(repo.getOwnerLogin(), repo.name, repo.defaultBranch, false)
                 dismiss()
             } else {
-                onRepoSelected?.invoke(repo)
+                onRepoSelected?.invoke(repo.getOwnerLogin(), repo.name)
                 dismiss()
             }
         }

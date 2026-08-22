@@ -1,4 +1,4 @@
-﻿package io.nggit.model
+package io.nggit.model
 
 import com.google.gson.annotations.SerializedName
 

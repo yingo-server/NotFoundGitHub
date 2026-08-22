@@ -1,4 +1,4 @@
-﻿package io.nggit.auth
+package io.nggit.auth
 
 import android.app.AlertDialog
 import android.content.Intent

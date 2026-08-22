@@ -1,4 +1,4 @@
-﻿package io.nggit.ui.editor
+package io.nggit.ui.editor
 
 import android.os.Bundle
 import android.os.Handler
