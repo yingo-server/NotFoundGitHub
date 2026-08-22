@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace 'io.nggit'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "io.nggit"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
