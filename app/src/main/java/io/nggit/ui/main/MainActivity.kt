@@ -772,7 +772,64 @@ class MainActivity : AppCompatActivity() {
         val pathText = if (pane == leftState) leftPathText else rightPathText
         val list = if (pane == leftState) leftFileList else rightFileList
         val empty = if (pane == leftState) leftEmptyView else rightEmptyView
-        pathText.text = pane.getDisplayPath()
+        val pathBar = if (pane == leftState) leftPathBar else rightPathBar
+
+        // Build breadcrumb path
+        pathBar.removeViews(2, pathBar.childCount - 3)
+        val segments = mutableListOf<String>()
+        if (pane.isRemote) {
+            if (pane.repoOwner.isNotEmpty()) {
+                segments.add(pane.repoOwner)
+                if (pane.repoName.isNotEmpty()) {
+                    segments.add(pane.repoName)
+                }
+            }
+        }
+        if (pane.currentPath.isNotEmpty()) {
+            segments.addAll(pane.currentPath.split("/").filter { it.isNotEmpty() })
+        }
+
+        if (segments.size > 0) {
+            pathText.visibility = View.GONE
+            for ((index, segment) in segments.withIndex()) {
+                val tv = TextView(this).apply {
+                    text = if (index < segments.size - 1) "$segment > " else segment
+                    textSize = 11f
+                    setTextColor(if (index < segments.size - 1) getColor(R.color.accent) else getColor(R.color.text_primary))
+                    setPadding(2, 0, 2, 0)
+                    isSingleLine = true
+                    if (index < segments.size - 1) {
+                        setOnClickListener {
+                            val targetPath = segments.subList(index + 1, segments.size).joinToString("/")
+                            if (pane.isRemote && index == 0) {
+                                // Clicked on owner - go to repo list
+                                pane.repoOwner = ""
+                                pane.repoName = ""
+                                pane.branch = "main"
+                                pane.history.clear()
+                                pane.history.add("")
+                                pane.historyIndex = 0
+                                pane.currentPath = ""
+                                loadRepos()
+                            } else if (pane.isRemote && index == 1) {
+                                // Clicked on repo name - go to repo root
+                                pane.currentPath = ""
+                                pane.pushPath("")
+                                loadRemoteFiles(pane)
+                            } else {
+                                pane.pushPath(targetPath)
+                                if (pane.isRemote) loadRemoteFiles(pane) else loadLocalFiles()
+                            }
+                        }
+                    }
+                }
+                pathBar.addView(tv, pathBar.childCount - 1)
+            }
+        } else {
+            pathText.visibility = View.VISIBLE
+            pathText.text = pane.getDisplayPath()
+        }
+
         if (pane.files.isNotEmpty()) { list.visibility = View.VISIBLE; empty.visibility = View.GONE }
     }
 
