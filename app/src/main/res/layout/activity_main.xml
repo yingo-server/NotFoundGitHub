@@ -129,7 +129,7 @@
             </FrameLayout>
         </LinearLayout>
 
-        <View
+        <io.nggit.ui.main.DragDividerView
             android:id="@+id/pane_divider"
             android:layout_width="1dp"
             android:layout_height="match_parent"

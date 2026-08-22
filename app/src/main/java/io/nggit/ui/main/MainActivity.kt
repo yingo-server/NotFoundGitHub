@@ -115,6 +115,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        DragDividerView.leftPaneId = R.id.left_pane
+        DragDividerView.rightPaneId = R.id.right_pane
         toolbar = findViewById(R.id.toolbar)
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
