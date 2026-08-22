@@ -21,6 +21,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.nggit.App
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var leftFileList: RecyclerView
     private lateinit var leftEmptyView: TextView
     private lateinit var leftLoader: ProgressBar
+    private lateinit var leftSwipe: SwipeRefreshLayout
 
     private lateinit var rightPane: View
     private lateinit var rightPathBar: LinearLayout
@@ -67,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rightFileList: RecyclerView
     private lateinit var rightEmptyView: TextView
     private lateinit var rightLoader: ProgressBar
+    private lateinit var rightSwipe: SwipeRefreshLayout
 
     private lateinit var btnBack: ImageButton
     private lateinit var btnForward: ImageButton
@@ -121,6 +124,7 @@ class MainActivity : AppCompatActivity() {
         leftFileList = findViewById(R.id.left_file_list)
         leftEmptyView = findViewById(R.id.left_empty_view)
         leftLoader = findViewById(R.id.left_loader)
+        leftSwipe = findViewById(R.id.left_swipe)
         rightPane = findViewById(R.id.right_pane)
         rightPathBar = findViewById(R.id.right_path_bar)
         rightBackBtn = findViewById(R.id.right_back_btn)
@@ -130,6 +134,7 @@ class MainActivity : AppCompatActivity() {
         rightFileList = findViewById(R.id.right_file_list)
         rightEmptyView = findViewById(R.id.right_empty_view)
         rightLoader = findViewById(R.id.right_loader)
+        rightSwipe = findViewById(R.id.right_swipe)
         btnBack = findViewById(R.id.btn_back)
         btnForward = findViewById(R.id.btn_forward)
         btnSync = findViewById(R.id.btn_sync)
@@ -139,6 +144,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLeftPane() {
+        leftSwipe.setColorSchemeResources(R.color.colorPrimary)
+        leftSwipe.setOnRefreshListener {
+            if (leftState.repoOwner.isNotEmpty()) loadRemoteFiles(leftState) else loadRepos()
+        }
         leftAdapter = FileAdapter(this, emptyList(),
             onItemClick = { file -> onFileClick(leftState, file) },
             onItemLongClick = { file -> onFileLongClick(leftState, file) }
@@ -152,6 +161,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRightPane() {
+        rightSwipe.setColorSchemeResources(R.color.colorPrimary)
+        rightSwipe.setOnRefreshListener { loadLocalFiles() }
         rightAdapter = FileAdapter(this, emptyList(),
             onItemClick = { file -> onFileClick(rightState, file) },
             onItemLongClick = { file -> onFileLongClick(rightState, file) }
@@ -187,6 +198,7 @@ class MainActivity : AppCompatActivity() {
                 val starredRepos = api.listStarredRepos(token)
                 mainHandler.post {
                     showLoader(leftState, false)
+                    leftSwipe.isRefreshing = false
                     leftState.history.clear()
                     leftState.history.add("")
                     leftState.historyIndex = 0
@@ -223,6 +235,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 mainHandler.post {
                     showLoader(leftState, false)
+                    leftSwipe.isRefreshing = false
                     showEmpty(leftState, "Failed: ${e.message}")
                 }
             }
@@ -237,6 +250,7 @@ class MainActivity : AppCompatActivity() {
                 val files = api.getContents(token, pane.repoOwner, pane.repoName, pane.currentPath, pane.branch)
                 mainHandler.post {
                     showLoader(pane, false)
+                    if (pane == leftState) leftSwipe.isRefreshing = false else rightSwipe.isRefreshing = false
                     if (files.isEmpty()) {
                         showEmpty(pane, getString(R.string.file_dir_empty))
                     } else {
@@ -251,6 +265,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 mainHandler.post {
                     showLoader(pane, false)
+                    if (pane == leftState) leftSwipe.isRefreshing = false else rightSwipe.isRefreshing = false
                     showEmpty(pane, e.message ?: "Error")
                 }
             }
@@ -258,7 +273,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadLocalFiles() {
-        showLoader(rightState, true)
+        rightSwipe.isRefreshing = false
         updatePaneViews(rightState)
         val basePath = StoragePath.getBasePath()
         val currentDir = if (rightState.currentPath.isEmpty()) basePath
@@ -370,7 +385,7 @@ class MainActivity : AppCompatActivity() {
         if (!pane.canGoBack()) return
         pane.goBack()
         if (pane.isRemote) {
-            if (pane.currentPath.isEmpty() && pane.repoOwner.isEmpty()) loadRepos()
+            if (pane.repoOwner.isEmpty()) loadRepos()
             else loadRemoteFiles(pane)
         } else loadLocalFiles()
     }
@@ -382,11 +397,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navigateUp(pane: FilePaneState) {
-        if (pane.currentPath.isEmpty()) return
-        val parts = pane.currentPath.split("/")
-        val parentPath = if (parts.size <= 1) "" else parts.dropLast(1).joinToString("/")
-        pane.pushPath(parentPath)
-        if (pane.isRemote) loadRemoteFiles(pane) else loadLocalFiles()
+        if (pane.isRemote) {
+            if (pane.currentPath.isEmpty() && pane.repoOwner.isNotEmpty()) {
+                // At repo root -> go back to repo list
+                pane.repoOwner = ""
+                pane.repoName = ""
+                pane.branch = "main"
+                pane.history.clear()
+                pane.history.add("")
+                pane.historyIndex = 0
+                pane.currentPath = ""
+                loadRepos()
+            } else if (pane.currentPath.isNotEmpty()) {
+                val parts = pane.currentPath.split("/")
+                val parentPath = if (parts.size <= 1) "" else parts.dropLast(1).joinToString("/")
+                pane.pushPath(parentPath)
+                loadRemoteFiles(pane)
+            }
+        } else {
+            if (pane.currentPath.isEmpty()) return
+            val parts = pane.currentPath.split("/")
+            val parentPath = if (parts.size <= 1) "" else parts.dropLast(1).joinToString("/")
+            pane.pushPath(parentPath)
+            loadLocalFiles()
+        }
     }
 
     private fun syncToOtherPane(source: FilePaneState) {
@@ -597,8 +631,17 @@ class MainActivity : AppCompatActivity() {
         val loader = if (pane == leftState) leftLoader else rightLoader
         val list = if (pane == leftState) leftFileList else rightFileList
         val empty = if (pane == leftState) leftEmptyView else rightEmptyView
-        if (show) { loader.visibility = View.VISIBLE; list.visibility = View.GONE; empty.visibility = View.GONE }
-        else { loader.visibility = View.GONE }
+        if (show) {
+            loader.visibility = View.VISIBLE
+            list.visibility = View.GONE
+            empty.visibility = View.GONE
+        } else {
+            loader.visibility = View.GONE
+            if (pane.files.isNotEmpty()) {
+                list.visibility = View.VISIBLE
+                empty.visibility = View.GONE
+            }
+        }
     }
 
     private fun showEmpty(pane: FilePaneState, message: String) {
