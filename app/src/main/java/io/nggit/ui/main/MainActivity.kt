@@ -34,6 +34,7 @@ import io.nggit.model.RepoInfo
 import io.nggit.sync.UploadManager
 import io.nggit.ui.editor.EditorActivity
 import io.nggit.ui.file.FileAdapter
+import io.nggit.ui.preview.PreviewActivity
 import io.nggit.ui.search.SearchDialog
 import io.nggit.util.StoragePath
 import java.io.File
@@ -365,16 +366,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openRemoteFile(pane: FilePaneState, file: FileInfo) {
-        val intent = Intent(this, EditorActivity::class.java).apply {
-            putExtra("file_path", file.downloadUrl ?: "")
-            putExtra("file_name", file.name)
-            putExtra("repo_owner", pane.repoOwner)
-            putExtra("repo_name", pane.repoName)
-            putExtra("repo_branch", pane.branch)
-            putExtra("is_starred", pane.isStarred)
-            putExtra("file_sha", file.sha)
+        val ext = file.getExtension()
+        if (isMediaFile(ext)) {
+            val intent = Intent(this, PreviewActivity::class.java).apply {
+                putExtra("file_path", file.downloadUrl ?: "")
+                putExtra("file_name", file.name)
+            }
+            startActivity(intent)
+        } else {
+            val intent = Intent(this, EditorActivity::class.java).apply {
+                putExtra("file_path", file.downloadUrl ?: "")
+                putExtra("file_name", file.name)
+                putExtra("repo_owner", pane.repoOwner)
+                putExtra("repo_name", pane.repoName)
+                putExtra("repo_branch", pane.branch)
+                putExtra("is_starred", pane.isStarred)
+                putExtra("file_sha", file.sha)
+            }
+            startActivity(intent)
         }
-        startActivity(intent)
     }
 
     private fun openLocalFile(file: FileInfo) {
@@ -383,12 +393,25 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, getString(R.string.editor_file_not_found), Toast.LENGTH_SHORT).show()
             return
         }
-        val intent = Intent(this, EditorActivity::class.java).apply {
-            putExtra("file_path", fullPath.absolutePath)
-            putExtra("file_name", file.name)
-            putExtra("is_local", true)
+        val ext = file.getExtension()
+        if (isMediaFile(ext)) {
+            val intent = Intent(this, PreviewActivity::class.java).apply {
+                putExtra("file_path", fullPath.absolutePath)
+                putExtra("file_name", file.name)
+            }
+            startActivity(intent)
+        } else {
+            val intent = Intent(this, EditorActivity::class.java).apply {
+                putExtra("file_path", fullPath.absolutePath)
+                putExtra("file_name", file.name)
+                putExtra("is_local", true)
+            }
+            startActivity(intent)
         }
-        startActivity(intent)
+    }
+
+    private fun isMediaFile(ext: String): Boolean {
+        return setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico", "mp4", "avi", "mkv", "mov", "wmv", "webm", "flv", "mp3", "wav", "ogg", "m4a", "aac", "flac", "wma").contains(ext.lowercase())
     }
 
     private fun navigateBack(pane: FilePaneState) {

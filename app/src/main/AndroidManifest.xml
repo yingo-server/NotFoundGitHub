@@ -53,6 +53,11 @@
             android:theme="@style/Theme.NG"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ui.preview.PreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NG" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
