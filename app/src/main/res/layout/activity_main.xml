@@ -15,7 +15,8 @@
         app:title="NGGit"
         app:titleTextColor="@color/text_primary"
         app:navigationIcon="@drawable/ic_menu"
-        app:navigationIconTint="@color/text_primary" />
+        app:navigationIconTint="@color/text_primary"
+        app:menu="@menu/menu_main" />
 
     <View
         android:layout_width="match_parent"

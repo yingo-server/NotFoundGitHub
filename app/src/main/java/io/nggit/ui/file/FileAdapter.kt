@@ -15,19 +15,55 @@ class FileAdapter(
     private val context: Context,
     private var items: List<FileInfo>,
     private val onItemClick: (FileInfo) -> Unit,
-    private val onItemLongClick: ((FileInfo) -> Unit)? = null
+    private val onItemLongClick: ((FileInfo) -> Unit)? = null,
+    private val onSelectionChanged: ((Int) -> Unit)? = null
 ) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
 
     private var selectedPosition = -1
+    private val multiSelected = mutableSetOf<Int>()
+    var multiSelectMode = false
+        private set
 
     fun updateData(newItems: List<FileInfo>) {
         items = newItems
         selectedPosition = -1
+        multiSelected.clear()
+        multiSelectMode = false
         notifyDataSetChanged()
     }
 
     fun getSelectedFile(): FileInfo? {
         return if (selectedPosition >= 0 && selectedPosition < items.size) items[selectedPosition] else null
+    }
+
+    fun getMultiSelectedFiles(): List<FileInfo> {
+        return multiSelected.mapNotNull { if (it in items.indices) items[it] else null }
+    }
+
+    fun getMultiSelectedCount(): Int = multiSelected.size
+
+    fun clearSelection() {
+        val prev = multiSelected.toSet()
+        multiSelected.clear()
+        multiSelectMode = false
+        for (i in prev) notifyItemChanged(i)
+        onSelectionChanged?.invoke(0)
+    }
+
+    fun toggleMultiSelect(position: Int) {
+        if (position < 0 || position >= items.size) return
+        if (!multiSelectMode) {
+            multiSelectMode = true
+            multiSelected.clear()
+        }
+        if (multiSelected.contains(position)) {
+            multiSelected.remove(position)
+            if (multiSelected.isEmpty()) multiSelectMode = false
+        } else {
+            multiSelected.add(position)
+        }
+        notifyItemChanged(position)
+        onSelectionChanged?.invoke(multiSelected.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FileViewHolder {
@@ -36,16 +72,26 @@ class FileAdapter(
     }
 
     override fun onBindViewHolder(holder: FileViewHolder, position: Int) {
-        holder.bind(items[position], position == selectedPosition)
+        val isSelected = if (multiSelectMode) multiSelected.contains(position) else position == selectedPosition
+        holder.bind(items[position], isSelected, multiSelectMode)
         holder.itemView.setOnClickListener {
-            val old = selectedPosition
-            selectedPosition = holder.adapterPosition
-            if (old >= 0) notifyItemChanged(old)
-            notifyItemChanged(selectedPosition)
-            onItemClick(items[holder.adapterPosition])
+            if (multiSelectMode) {
+                toggleMultiSelect(holder.adapterPosition)
+            } else {
+                val old = selectedPosition
+                selectedPosition = holder.adapterPosition
+                if (old >= 0) notifyItemChanged(old)
+                notifyItemChanged(selectedPosition)
+                onItemClick(items[holder.adapterPosition])
+            }
         }
         holder.itemView.setOnLongClickListener {
-            onItemLongClick?.invoke(items[holder.adapterPosition])
+            if (multiSelectMode) {
+                toggleMultiSelect(holder.adapterPosition)
+            } else {
+                toggleMultiSelect(holder.adapterPosition)
+                onItemLongClick?.invoke(items[holder.adapterPosition])
+            }
             true
         }
     }
@@ -56,10 +102,16 @@ class FileAdapter(
         private val icon: ImageView = itemView.findViewById(R.id.file_icon)
         private val name: TextView = itemView.findViewById(R.id.file_name)
         private val size: TextView = itemView.findViewById(R.id.file_size)
+        private val checkBox: android.widget.CheckBox? = itemView.findViewById(R.id.file_check)
 
-        fun bind(file: FileInfo, selected: Boolean) {
+        fun bind(file: FileInfo, selected: Boolean, multiMode: Boolean) {
             name.text = file.name
             itemView.isSelected = selected
+
+            checkBox?.let { cb ->
+                cb.visibility = if (multiMode) View.VISIBLE else View.GONE
+                cb.isChecked = selected
+            }
 
             if (file.isDir()) {
                 size.text = ""

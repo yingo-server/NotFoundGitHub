@@ -115,6 +115,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         toolbar = findViewById(R.id.toolbar)
+        toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_search -> { showSearchDialog(); true }
+                R.id.action_settings -> { showMoreMenu(toolbar); true }
+                else -> false
+            }
+        }
         leftPane = findViewById(R.id.left_pane)
         leftPathBar = findViewById(R.id.left_path_bar)
         leftBackBtn = findViewById(R.id.left_back_btn)
@@ -487,13 +494,15 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, 1, 0, "Search Repos")
         popup.menu.add(0, 2, 1, "New File")
         popup.menu.add(0, 3, 2, "New Folder")
-        popup.menu.add(0, 4, 3, "Refresh")
+        popup.menu.add(0, 4, 3, "Multi-select")
+        popup.menu.add(0, 5, 4, "Refresh")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> showSearchDialog()
                 2 -> showNewFileDialog()
                 3 -> showNewFolderDialog()
-                4 -> {
+                4 -> toggleMultiSelectMode()
+                5 -> {
                     if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) loadRemoteFiles(activePane)
                     else if (!activePane.isRemote) loadLocalFiles()
                     else loadRepos()
@@ -502,6 +511,17 @@ class MainActivity : AppCompatActivity() {
             true
         }
         popup.show()
+    }
+
+    private fun toggleMultiSelectMode() {
+        val adapter = getAdapter(activePane)
+        if (adapter.multiSelectMode) {
+            adapter.clearSelection()
+            Toast.makeText(this, "Selection cleared", Toast.LENGTH_SHORT).show()
+        } else {
+            adapter.toggleMultiSelect(0)
+            Toast.makeText(this, "Multi-select mode ON. Tap to select, long-press to deselect.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showSearchDialog() {
