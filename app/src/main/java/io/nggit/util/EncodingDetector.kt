@@ -21,9 +21,9 @@ object EncodingDetector {
 
         if (containsHighBytes(bytes)) {
             try {
-                val decoded = String(bytes, Charsets.forName("GBK"))
+                val decoded = String(bytes, Charset.forName("GBK"))
                 if (decoded.containsChineseCharacters()) {
-                    return Charsets.forName("GBK")
+                    return Charset.forName("GBK")
                 }
             } catch (_: Exception) {}
         }
@@ -42,9 +42,9 @@ object EncodingDetector {
 
         if (containsHighBytes(content)) {
             try {
-                val decoded = String(content, Charsets.forName("GBK"))
+                val decoded = String(content, Charset.forName("GBK"))
                 if (decoded.containsChineseCharacters()) {
-                    return Charsets.forName("GBK")
+                    return Charset.forName("GBK")
                 }
             } catch (_: Exception) {}
         }

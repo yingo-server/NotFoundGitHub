@@ -8,6 +8,7 @@ import android.util.Log
 import java.io.File
 import java.io.PrintWriter
 import io.nggit.R
+import io.nggit.App
 import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date

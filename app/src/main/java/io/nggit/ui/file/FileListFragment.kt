@@ -186,7 +186,7 @@ class FileListFragment : Fragment() {
 
             items.add(FileInfo(
                 name = file.name,
-                path = file.relativeTo(File(StoragePath.getBasePath())).path,
+                path = file.relativeTo(StoragePath.getBasePath()).path,
                 sha = sha,
                 size = file.length(),
                 type = type,
@@ -197,7 +197,8 @@ class FileListFragment : Fragment() {
     }
 
     private fun showRepoList(repos: List<RepoInfo>, isStarred: Boolean) {
-        adapter = FileAdapter(requireContext(), repos, isStarred) { repo ->
+        adapter = FileAdapter(requireContext(), repos, isStarred) { item ->
+            val repo = item as RepoInfo
             (activity as? MainActivity)?.enterRepo(
                 repo.getOwnerLogin(), repo.name, repo.defaultBranch, isStarred
             )
@@ -209,15 +210,16 @@ class FileListFragment : Fragment() {
 
     private fun showFileList(files: List<FileInfo>) {
         val mainActivity = activity as? MainActivity
-        adapter = FileAdapter(requireContext(), files) { fileInfo ->
+        adapter = FileAdapter(requireContext(), files) { item ->
+            val fileInfo = item as FileInfo
             if (fileInfo.isDir()) {
                 mainActivity?.enterFolder(fileInfo.name)
             } else {
                 mainActivity?.openFile(fileInfo)
             }
         }
-        adapter?.setOnItemLongClickListener { fileInfo, position ->
-            showFileContextMenu(fileInfo)
+        adapter?.setOnItemLongClickListener { item, position ->
+            showFileContextMenu(item as FileInfo)
         }
         recyclerView.adapter = adapter
         recyclerView.visibility = View.VISIBLE

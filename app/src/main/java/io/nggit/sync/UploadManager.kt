@@ -2,6 +2,7 @@
 
 import android.content.Context
 import android.os.Handler
+import android.widget.Toast
 import io.nggit.R
 import android.os.Looper
 import io.nggit.App

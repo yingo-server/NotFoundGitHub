@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val PERMISSION_REQUEST = 100
-        private const val STORAGE_PERMISSIONS = arrayOf(
+        private val STORAGE_PERMISSIONS = arrayOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
     var currentBranch: String = "main"
     var isStarredRepo: Boolean = false
 
-    private var pendingChanges: MutableMap<String, String> = mutableMap()
+    private var pendingChanges: MutableMap<String, String> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

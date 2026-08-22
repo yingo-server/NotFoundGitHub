@@ -4,6 +4,8 @@ import io.nggit.model.*
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.net.URLEncoder
 import android.util.Log

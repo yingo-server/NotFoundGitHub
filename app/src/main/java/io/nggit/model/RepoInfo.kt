@@ -24,7 +24,7 @@ data class RepoInfo(
     @SerializedName("fork") val isFork: Boolean = false
 ) {
     fun getOwnerLogin(): String = owner.login
-    fun getDisplayName(): String = fullName.ifEmpty { "$getOwnerLogin/$name" }
+    fun getDisplayName(): String = fullName.ifEmpty { "${getOwnerLogin()}/$name" }
 }
 
 data class RepoOwner(

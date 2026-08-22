@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import io.nggit.R
 import io.nggit.auth.AuthActivity
 import io.nggit.auth.AuthManager
@@ -78,7 +79,7 @@ class ProfileFragment : Fragment() {
         loginText.text = login
 
         if (avatarUrl != null) {
-            com.github.bumptech.glide.Glide.with(this)
+            Glide.with(this)
                 .load(avatarUrl)
                 .placeholder(R.drawable.ic_user)
                 .circleCrop()
