@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
 import io.nggit.App
 import io.nggit.R
 import io.nggit.auth.AuthActivity
@@ -48,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private lateinit var toolbar: View
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var leftPane: View
     private lateinit var leftPathBar: LinearLayout
     private lateinit var leftBackBtn: ImageButton
