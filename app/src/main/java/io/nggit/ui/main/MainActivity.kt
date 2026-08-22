@@ -677,17 +677,71 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showFileContextMenu(pane: FilePaneState, file: FileInfo) {
-        val options = mutableListOf("Rename", "Copy Link")
+        val options = mutableListOf("Info", "Rename", "Copy Link")
         if (pane.isRemote) options.add("Delete")
+        if (!pane.isRemote) options.add("Copy to Remote")
         AlertDialog.Builder(this)
             .setTitle(file.name)
             .setItems(options.toTypedArray()) { _, which ->
                 when (options[which]) {
+                    "Info" -> showFileInfo(pane, file)
                     "Rename" -> showRenameDialog(pane, file)
                     "Copy Link" -> copyFileLink(pane, file)
                     "Delete" -> confirmDelete(pane, file)
+                    "Copy to Remote" -> copyLocalToRemote(pane, file)
                 }
             }.show()
+    }
+
+    private fun showFileInfo(pane: FilePaneState, file: FileInfo) {
+        val sb = StringBuilder()
+        sb.appendLine("Name: ${file.name}")
+        sb.appendLine("Type: ${if (file.isDir()) "Directory" else file.getExtension().uppercase().ifEmpty { "File" }}")
+        sb.appendLine("Size: ${formatFileSize(file.size)}")
+        sb.appendLine("Path: ${file.path}")
+        if (pane.isRemote) {
+            sb.appendLine("SHA: ${file.sha.take(12)}...")
+            sb.appendLine("Repo: ${pane.repoOwner}/${pane.repoName}")
+            sb.appendLine("Branch: ${pane.branch}")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("File Info")
+            .setMessage(sb.toString())
+            .setPositiveButton(R.string.ok, null)
+            .show()
+    }
+
+    private fun formatFileSize(bytes: Long): String {
+        if (bytes == 0L) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB")
+        var size = bytes.toDouble()
+        var unitIndex = 0
+        while (size >= 1024 && unitIndex < units.size - 1) { size /= 1024; unitIndex++ }
+        return "%.1f %s".format(size, units[unitIndex])
+    }
+
+    private fun copyLocalToRemote(pane: FilePaneState, file: FileInfo) {
+        if (leftState.repoOwner.isEmpty()) {
+            Toast.makeText(this, "Select a repo first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (file.isDir()) {
+            Toast.makeText(this, "Cannot copy directories yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val localFile = File(StoragePath.getBasePath(), file.path)
+        if (!localFile.exists()) {
+            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val content = localFile.readText(Charsets.UTF_8)
+        val remotePath = if (leftState.currentPath.isEmpty()) file.name else "${leftState.currentPath}/${file.name}"
+        UploadManager(this).createNewFile(leftState.repoOwner, leftState.repoName, leftState.branch, remotePath) { success ->
+            runOnUiThread {
+                Toast.makeText(this, if (success) "Copied to repo" else "Copy failed", Toast.LENGTH_SHORT).show()
+                if (success) loadRemoteFiles(leftState)
+            }
+        }
     }
 
     private fun showRenameDialog(pane: FilePaneState, file: FileInfo) {
