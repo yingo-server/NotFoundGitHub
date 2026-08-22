@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLeftPane() {
-        leftSwipe.setColorSchemeResources(R.color.colorPrimary)
+        leftSwipe.setColorSchemeResources(R.color.accent)
         leftSwipe.setOnRefreshListener {
             if (leftState.repoOwner.isNotEmpty()) loadRemoteFiles(leftState) else loadRepos()
         }
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupRightPane() {
-        rightSwipe.setColorSchemeResources(R.color.colorPrimary)
+        rightSwipe.setColorSchemeResources(R.color.accent)
         rightSwipe.setOnRefreshListener { loadLocalFiles() }
         rightAdapter = FileAdapter(this, emptyList(),
             onItemClick = { file -> onFileClick(rightState, file) },
