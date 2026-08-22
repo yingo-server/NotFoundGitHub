@@ -36,4 +36,6 @@
 
     <color name="ripple_light">#1a000000</color>
     <color name="ripple_dark">#1affffff</color>
+
+    <color name="ic_launcher_background">#212121</color>
 </resources>
