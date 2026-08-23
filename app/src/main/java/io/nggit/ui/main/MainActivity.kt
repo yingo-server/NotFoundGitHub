@@ -284,6 +284,8 @@ class MainActivity : AppCompatActivity() {
             SortMode.NAME_DESC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenByDescending { it.name.lowercase() })
             SortMode.SIZE_ASC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenBy { it.size })
             SortMode.SIZE_DESC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenByDescending { it.size })
+            SortMode.DATE_ASC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenBy { it.lastModified })
+            SortMode.DATE_DESC -> result.sortedWith(compareBy<FileInfo> { !it.isDir() }.thenByDescending { it.lastModified })
         }
     }
 
@@ -300,7 +302,8 @@ class MainActivity : AppCompatActivity() {
                 name = file.name,
                 path = file.relativeTo(basePath).path.replace("\\", "/"),
                 type = type,
-                size = if (file.isFile) file.length() else 0
+                size = if (file.isFile) file.length() else 0,
+                lastModified = file.lastModified()
             ))
         }
         val sorted = sortAndFilter(rightState, items)
@@ -526,8 +529,10 @@ class MainActivity : AppCompatActivity() {
         val sortLabel = when (activePane.sortMode) {
             SortMode.NAME_ASC -> "Sort: Name A-Z"
             SortMode.NAME_DESC -> "Sort: Name Z-A"
-            SortMode.SIZE_ASC -> "Sort: Size ↑"
-            SortMode.SIZE_DESC -> "Sort: Size ↓"
+            SortMode.SIZE_ASC -> "Sort: Size up"
+            SortMode.SIZE_DESC -> "Sort: Size down"
+            SortMode.DATE_ASC -> "Sort: Date old"
+            SortMode.DATE_DESC -> "Sort: Date new"
         }
         popup.menu.add(0, 7, 5, sortLabel)
         popup.menu.add(0, 8, 6, if (activePane.showHidden) "Hide Hidden Files" else "Show Hidden Files")
@@ -559,7 +564,9 @@ class MainActivity : AppCompatActivity() {
             SortMode.NAME_ASC -> SortMode.NAME_DESC
             SortMode.NAME_DESC -> SortMode.SIZE_ASC
             SortMode.SIZE_ASC -> SortMode.SIZE_DESC
-            SortMode.SIZE_DESC -> SortMode.NAME_ASC
+            SortMode.SIZE_DESC -> SortMode.DATE_DESC
+            SortMode.DATE_DESC -> SortMode.DATE_ASC
+            SortMode.DATE_ASC -> SortMode.NAME_ASC
         }
         if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) loadRemoteFiles(activePane)
         else if (!activePane.isRemote) loadLocalFiles()

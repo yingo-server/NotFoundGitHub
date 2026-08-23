@@ -50,5 +50,5 @@ data class FilePaneState(
 }
 
 enum class SortMode {
-    NAME_ASC, NAME_DESC, SIZE_ASC, SIZE_DESC
+    NAME_ASC, NAME_DESC, SIZE_ASC, SIZE_DESC, DATE_DESC, DATE_ASC
 }

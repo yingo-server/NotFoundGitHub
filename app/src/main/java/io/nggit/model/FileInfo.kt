@@ -12,7 +12,8 @@ data class FileInfo(
     @SerializedName("git_url") val gitUrl: String = "",
     @SerializedName("download_url") val downloadUrl: String? = null,
     @SerializedName("type") val type: String = "file",
-    @SerializedName("_links") val links: FileLinks? = null
+    @SerializedName("_links") val links: FileLinks? = null,
+    var lastModified: Long = 0
 ) {
     fun isDir(): Boolean = type == "dir"
 
