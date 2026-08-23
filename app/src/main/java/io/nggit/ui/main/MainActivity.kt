@@ -951,7 +951,8 @@ class MainActivity : AppCompatActivity() {
                 if (pane.currentPath.isNotEmpty()) "$prefix/${pane.currentPath}" else prefix
             } else ""
         } else {
-            StoragePath.getBasePath() + if (pane.currentPath.isNotEmpty()) "/${pane.currentPath}" else ""
+            val suffix = if (pane.currentPath.isNotEmpty()) "/${pane.currentPath}" else ""
+            StoragePath.getBasePath() + suffix
         }
 
         val input = EditText(this).apply {
