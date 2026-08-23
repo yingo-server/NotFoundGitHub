@@ -656,28 +656,35 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "No files selected", Toast.LENGTH_SHORT).show()
             return
         }
-        if (!activePane.isRemote || activePane.repoOwner.isEmpty()) {
-            Toast.makeText(this, "Batch delete only for remote files", Toast.LENGTH_SHORT).show()
-            return
-        }
         AlertDialog.Builder(this)
             .setTitle("Batch Delete")
             .setMessage("Delete ${selected.size} files?")
             .setPositiveButton(R.string.file_delete) { _, _ ->
-                var completed = 0
-                var failed = 0
-                for (file in selected) {
-                    UploadManager(this).deleteFile(activePane.repoOwner, activePane.repoName, activePane.branch, file.path, file.sha) { success ->
-                        runOnUiThread {
-                            completed++
-                            if (!success) failed++
-                            if (completed == selected.size) {
-                                adapter.clearSelection()
-                                loadRemoteFiles(activePane)
-                                Toast.makeText(this, "${completed - failed} deleted, $failed failed", Toast.LENGTH_SHORT).show()
+                if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) {
+                    var completed = 0
+                    var failed = 0
+                    for (file in selected) {
+                        UploadManager(this).deleteFile(activePane.repoOwner, activePane.repoName, activePane.branch, file.path, file.sha) { success ->
+                            runOnUiThread {
+                                completed++
+                                if (!success) failed++
+                                if (completed == selected.size) {
+                                    adapter.clearSelection()
+                                    loadRemoteFiles(activePane)
+                                    Toast.makeText(this, "${completed - failed} deleted, $failed failed", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
+                } else {
+                    var deleted = 0
+                    for (file in selected) {
+                        val localFile = File(StoragePath.getBasePath(), file.path)
+                        if (localFile.delete()) deleted++
+                    }
+                    adapter.clearSelection()
+                    loadLocalFiles()
+                    Toast.makeText(this, "$deleted files deleted", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton(R.string.cancel, null).show()
@@ -691,7 +698,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showNewFileDialog() {
         val pane = activePane
-        if (!pane.isRemote || pane.repoOwner.isEmpty()) {
+        if (pane.isRemote && pane.repoOwner.isEmpty()) {
             Toast.makeText(this, "Select a repo first", Toast.LENGTH_SHORT).show()
             return
         }
@@ -701,11 +708,23 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.create) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    val path = if (pane.currentPath.isEmpty()) name else "${pane.currentPath}/$name"
-                    UploadManager(this).createNewFile(pane.repoOwner, pane.repoName, pane.branch, path) { success ->
-                        runOnUiThread {
-                            Toast.makeText(this, if (success) getString(R.string.create_file_created) else getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
-                            if (success) loadRemoteFiles(pane)
+                    if (pane.isRemote) {
+                        val path = if (pane.currentPath.isEmpty()) name else "${pane.currentPath}/$name"
+                        UploadManager(this).createNewFile(pane.repoOwner, pane.repoName, pane.branch, path) { success ->
+                            runOnUiThread {
+                                Toast.makeText(this, if (success) getString(R.string.create_file_created) else getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
+                                if (success) loadRemoteFiles(pane)
+                            }
+                        }
+                    } else {
+                        val basePath = StoragePath.getBasePath()
+                        val dir = if (pane.currentPath.isEmpty()) basePath else File(basePath, pane.currentPath)
+                        val file = File(dir, name)
+                        if (file.createNewFile()) {
+                            Toast.makeText(this, getString(R.string.create_file_created), Toast.LENGTH_SHORT).show()
+                            loadLocalFiles()
+                        } else {
+                            Toast.makeText(this, getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -715,7 +734,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showNewFolderDialog() {
         val pane = activePane
-        if (!pane.isRemote || pane.repoOwner.isEmpty()) {
+        if (pane.isRemote && pane.repoOwner.isEmpty()) {
             Toast.makeText(this, "Select a repo first", Toast.LENGTH_SHORT).show()
             return
         }
@@ -725,11 +744,23 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.create) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    val path = if (pane.currentPath.isEmpty()) name else "${pane.currentPath}/$name"
-                    UploadManager(this).createNewFolder(pane.repoOwner, pane.repoName, pane.branch, path) { success ->
-                        runOnUiThread {
-                            Toast.makeText(this, if (success) getString(R.string.create_folder_created) else getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
-                            if (success) loadRemoteFiles(pane)
+                    if (pane.isRemote) {
+                        val path = if (pane.currentPath.isEmpty()) name else "${pane.currentPath}/$name"
+                        UploadManager(this).createNewFolder(pane.repoOwner, pane.repoName, pane.branch, path) { success ->
+                            runOnUiThread {
+                                Toast.makeText(this, if (success) getString(R.string.create_folder_created) else getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
+                                if (success) loadRemoteFiles(pane)
+                            }
+                        }
+                    } else {
+                        val basePath = StoragePath.getBasePath()
+                        val dir = if (pane.currentPath.isEmpty()) basePath else File(basePath, pane.currentPath)
+                        val folder = File(dir, name)
+                        if (folder.mkdirs()) {
+                            Toast.makeText(this, getString(R.string.create_folder_created), Toast.LENGTH_SHORT).show()
+                            loadLocalFiles()
+                        } else {
+                            Toast.makeText(this, getString(R.string.create_fail), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
