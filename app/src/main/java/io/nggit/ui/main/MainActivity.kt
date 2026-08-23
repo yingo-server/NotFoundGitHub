@@ -879,10 +879,26 @@ class MainActivity : AppCompatActivity() {
             sb.appendLine("SHA: ${file.sha.take(12)}...")
             sb.appendLine("Repo: ${pane.repoOwner}/${pane.repoName}")
             sb.appendLine("Branch: ${pane.branch}")
+        } else if (file.lastModified > 0) {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+            sb.appendLine("Modified: ${sdf.format(java.util.Date(file.lastModified))}")
         }
+        val actions = mutableListOf<String>()
+        actions.add("Copy Path")
+        actions.add("Copy SHA")
         AlertDialog.Builder(this)
             .setTitle("File Info")
             .setMessage(sb.toString())
+            .setItems(actions.toTypedArray()) { _, which ->
+                when (actions[which]) {
+                    "Copy Path" -> copyFilePath(pane, file)
+                    "Copy SHA" -> {
+                        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SHA", file.sha))
+                        Toast.makeText(this, "SHA copied", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
             .setPositiveButton(R.string.ok, null)
             .show()
     }
