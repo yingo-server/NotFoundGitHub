@@ -15,9 +15,9 @@ import android.widget.Toast
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import io.nggit.App
 import io.nggit.R
 import io.nggit.auth.AuthManager
-import io.nggit.service.GitHubApi
 import io.nggit.util.StoragePath
 import java.io.File
 import java.io.FileOutputStream
@@ -34,7 +34,6 @@ class PreviewActivity : AppCompatActivity() {
     private lateinit var loader: ProgressBar
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
-    private val api = GitHubApi()
     private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +58,8 @@ class PreviewActivity : AppCompatActivity() {
         val repoName = intent.getStringExtra("repo_name") ?: ""
         titleText.text = fileName
 
-        val ext = fileName.substringAfterLast('.', '').lowercase()
+        val dotIndex = fileName.lastIndexOf(".")
+        val ext = if (dotIndex > 0) fileName.substring(dotIndex + 1).lowercase() else ""
         when {
             IMAGE_EXTS.contains(ext) -> loadAndShowImage(filePath, repoOwner, repoName, repoBranch, fileSha)
             VIDEO_EXTS.contains(ext) -> loadAndShowVideo(filePath, repoOwner, repoName, repoBranch, fileSha)
@@ -71,7 +71,7 @@ class PreviewActivity : AppCompatActivity() {
     private fun downloadToTempFile(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String): File? {
         val token = AuthManager.getToken() ?: return null
         if (fileSha.isEmpty()) return null
-        val blob = api.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        val blob = App.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
         val decoded = when (blob.encoding) {
             "base64" -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
             else -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)

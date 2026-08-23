@@ -9,8 +9,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import io.nggit.R
+import io.nggit.App
 import io.nggit.auth.AuthManager
-import io.nggit.service.GitHubApi
 import io.nggit.util.EncodingDetector
 import io.nggit.util.StoragePath
 import java.io.File
@@ -32,7 +32,6 @@ class EditorActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val api = GitHubApi()
 
     private var filePath: String = ""
     private var fileName: String = ""
@@ -191,7 +190,7 @@ class EditorActivity : AppCompatActivity() {
     private fun loadRemoteFile(): String? {
         val token = AuthManager.getToken() ?: return null
         if (fileSha.isEmpty()) return null
-        val blob = api.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        val blob = App.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
         return when (blob.encoding) {
             "base64" -> {
                 val decoded = android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
@@ -259,7 +258,7 @@ class EditorActivity : AppCompatActivity() {
     private fun saveRemoteFile(content: String) {
         val token = AuthManager.getToken() ?: throw Exception("Not logged in")
         val commitMessage = "Update $fileName via NGGit"
-        val result = api.createOrUpdateFile(token, repoOwner, repoName, filePath, content, fileSha, commitMessage, repoBranch)
+        val result = App.githubApi.createOrUpdateFile(token, repoOwner, repoName, filePath, content, fileSha, commitMessage, repoBranch)
             ?: throw Exception("API error")
         fileSha = result.commit?.sha ?: fileSha
     }
