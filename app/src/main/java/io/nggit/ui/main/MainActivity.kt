@@ -952,7 +952,7 @@ class MainActivity : AppCompatActivity() {
             } else ""
         } else {
             val suffix = if (pane.currentPath.isNotEmpty()) "/${pane.currentPath}" else ""
-            StoragePath.getBasePath() + suffix
+            StoragePath.getBasePath().path + suffix
         }
 
         val input = EditText(this).apply {
