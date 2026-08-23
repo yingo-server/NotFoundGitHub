@@ -536,6 +536,10 @@ class MainActivity : AppCompatActivity() {
         }
         popup.menu.add(0, 7, 5, sortLabel)
         popup.menu.add(0, 8, 6, if (activePane.showHidden) "Hide Hidden Files" else "Show Hidden Files")
+        if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) {
+            val starLabel = if (activePane.isStarred) "Unstar Repo" else "Star Repo"
+            popup.menu.add(0, 10, 7, starLabel)
+        }
         popup.menu.add(0, 9, 8, "Create Repo")
         popup.menu.add(0, 5, 9, "Refresh")
         popup.setOnMenuItemClickListener { item ->
@@ -553,6 +557,7 @@ class MainActivity : AppCompatActivity() {
                 7 -> cycleSortMode()
                 8 -> toggleHiddenFiles()
                 9 -> showCreateRepoDialog()
+                10 -> toggleStarRepo()
             }
             true
         }
@@ -695,6 +700,27 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(R.string.cancel, null).show()
+    }
+
+    private fun toggleStarRepo() {
+        val pane = activePane
+        if (pane.repoOwner.isEmpty()) return
+        executor.execute {
+            val success = if (pane.isStarred) {
+                api.unstarRepo(token, pane.repoOwner, pane.repoName)
+            } else {
+                api.starRepo(token, pane.repoOwner, pane.repoName)
+            }
+            mainHandler.post {
+                if (success) {
+                    pane.isStarred = !pane.isStarred
+                    repoStarredMap[pane.repoName] = pane.isStarred
+                    Toast.makeText(this, if (pane.isStarred) "Starred" else "Unstarred", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun showSearchDialog() {
