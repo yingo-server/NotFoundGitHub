@@ -39,16 +39,16 @@
             <LinearLayout
                 android:id="@+id/left_path_bar"
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="40dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@color/surface"
-                android:paddingHorizontal="8dp">
+                android:background="@color/surface_variant"
+                android:paddingHorizontal="6dp">
 
                 <ImageButton
                     android:id="@+id/left_back_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_back"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -56,8 +56,8 @@
 
                 <ImageButton
                     android:id="@+id/left_forward_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_arrow_right"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -71,7 +71,7 @@
                     android:layout_weight="1"
                     android:text="/"
                     android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/text_primary"
                     android:singleLine="true"
                     android:ellipsize="middle"
                     android:paddingHorizontal="8dp"
@@ -79,8 +79,8 @@
 
                 <ImageButton
                     android:id="@+id/left_sync_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_sync"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -145,16 +145,16 @@
             <LinearLayout
                 android:id="@+id/right_path_bar"
                 android:layout_width="match_parent"
-                android:layout_height="36dp"
+                android:layout_height="40dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@color/surface"
-                android:paddingHorizontal="8dp">
+                android:background="@color/surface_variant"
+                android:paddingHorizontal="6dp">
 
                 <ImageButton
                     android:id="@+id/right_back_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_back"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -162,8 +162,8 @@
 
                 <ImageButton
                     android:id="@+id/right_forward_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_arrow_right"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -177,7 +177,7 @@
                     android:layout_weight="1"
                     android:text="/"
                     android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/text_primary"
                     android:singleLine="true"
                     android:ellipsize="middle"
                     android:paddingHorizontal="8dp"
@@ -185,8 +185,8 @@
 
                 <ImageButton
                     android:id="@+id/right_up_btn"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_up"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:scaleType="centerInside"
@@ -244,70 +244,172 @@
     <LinearLayout
         android:id="@+id/bottom_bar"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="52dp"
         android:orientation="horizontal"
         android:gravity="center"
         android:background="@color/surface"
-        android:paddingHorizontal="4dp">
+        android:paddingHorizontal="2dp">
 
-        <ImageButton
+        <LinearLayout
             android:id="@+id/btn_back"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="Back" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <ImageButton
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_back"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Back"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_forward"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_arrow_right"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="Forward" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <ImageButton
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_arrow_right"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fwd"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_sync"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_sync"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="Sync" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <ImageButton
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_sync"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Copy"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_up"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_up"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="Up" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <ImageButton
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_up"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Up"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_upload"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_upload"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="Upload" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <ImageButton
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_upload"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Upload"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_more"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_more"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="centerInside"
-            android:contentDescription="More" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_more"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="More"
+                android:textSize="9sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

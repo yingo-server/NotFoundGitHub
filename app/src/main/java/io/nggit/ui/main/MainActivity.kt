@@ -12,7 +12,6 @@ import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.ProgressBar
@@ -72,13 +71,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rightEmptyView: TextView
     private lateinit var rightLoader: ProgressBar
     private lateinit var rightSwipe: SwipeRefreshLayout
-
-    private lateinit var btnBack: ImageButton
-    private lateinit var btnForward: ImageButton
-    private lateinit var btnSync: ImageButton
-    private lateinit var btnUp: ImageButton
-    private lateinit var btnUpload: ImageButton
-    private lateinit var btnMore: ImageButton
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -147,12 +139,6 @@ class MainActivity : AppCompatActivity() {
         rightEmptyView = findViewById(R.id.right_empty_view)
         rightLoader = findViewById(R.id.right_loader)
         rightSwipe = findViewById(R.id.right_swipe)
-        btnBack = findViewById(R.id.btn_back)
-        btnForward = findViewById(R.id.btn_forward)
-        btnSync = findViewById(R.id.btn_sync)
-        btnUp = findViewById(R.id.btn_up)
-        btnUpload = findViewById(R.id.btn_upload)
-        btnMore = findViewById(R.id.btn_more)
     }
 
     private fun setupLeftPane() {
@@ -188,12 +174,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomBar() {
-        btnBack.setOnClickListener { navigateBack(activePane) }
-        btnForward.setOnClickListener { navigateForward(activePane) }
-        btnSync.setOnClickListener { syncToOtherPane(activePane) }
-        btnUp.setOnClickListener { navigateUp(activePane) }
-        btnUpload.setOnClickListener { showUploadDialog() }
-        btnMore.setOnClickListener { v -> showMoreMenu(v) }
+        findViewById<View>(R.id.btn_back).setOnClickListener { navigateBack(activePane) }
+        findViewById<View>(R.id.btn_forward).setOnClickListener { navigateForward(activePane) }
+        findViewById<View>(R.id.btn_sync).setOnClickListener { syncToOtherPane(activePane) }
+        findViewById<View>(R.id.btn_up).setOnClickListener { navigateUp(activePane) }
+        findViewById<View>(R.id.btn_upload).setOnClickListener { showUploadDialog() }
+        findViewById<View>(R.id.btn_more).setOnClickListener { v -> showMoreMenu(v) }
     }
 
     private fun setActivePane(pane: FilePaneState) {
