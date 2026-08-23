@@ -158,6 +158,9 @@ class MainActivity : AppCompatActivity() {
         leftForwardBtn.setOnClickListener { navigateForward(leftState) }
         leftSyncBtn.setOnClickListener { syncToOtherPane(leftState) }
         leftPathText.setOnClickListener { showPathEditDialog(leftState) }
+        addDoubleTapRefresh(leftFileList) {
+            if (leftState.repoOwner.isNotEmpty()) loadRemoteFiles(leftState) else loadRepos()
+        }
     }
 
     private fun setupRightPane() {
@@ -174,6 +177,7 @@ class MainActivity : AppCompatActivity() {
         rightForwardBtn.setOnClickListener { navigateForward(rightState) }
         rightUpBtn.setOnClickListener { navigateUp(rightState) }
         rightPathText.setOnClickListener { showPathEditDialog(rightState) }
+        addDoubleTapRefresh(rightFileList) { loadLocalFiles() }
     }
 
     private fun setupBottomBar() {
@@ -877,6 +881,24 @@ class MainActivity : AppCompatActivity() {
         val empty = if (pane == leftState) leftEmptyView else rightEmptyView
         val list = if (pane == leftState) leftFileList else rightFileList
         empty.text = message; empty.visibility = View.VISIBLE; list.visibility = View.GONE
+    }
+
+    private fun addDoubleTapRefresh(recyclerView: RecyclerView, onRefresh: () -> Unit) {
+        val gestureDetector = android.view.GestureDetector(this,
+            object : android.view.GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: android.view.MotionEvent): Boolean {
+                    onRefresh()
+                    return true
+                }
+            })
+        recyclerView.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: android.view.MotionEvent): Boolean {
+                gestureDetector.onTouchEvent(e)
+                return false
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: android.view.MotionEvent) {}
+            override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {}
+        })
     }
 
     private fun updatePaneViews(pane: FilePaneState) {
