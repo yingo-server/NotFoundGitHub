@@ -76,22 +76,17 @@ class FileAdapter(
         holder.bind(items[position], isSelected, multiSelectMode)
         holder.itemView.setOnClickListener {
             if (multiSelectMode) {
-                toggleMultiSelect(holder.adapterPosition)
+                toggleMultiSelect(holder.bindingAdapterPosition)
             } else {
                 val old = selectedPosition
-                selectedPosition = holder.adapterPosition
+                selectedPosition = holder.bindingAdapterPosition
                 if (old >= 0) notifyItemChanged(old)
                 notifyItemChanged(selectedPosition)
-                onItemClick(items[holder.adapterPosition])
+                onItemClick(items[holder.bindingAdapterPosition])
             }
         }
         holder.itemView.setOnLongClickListener {
-            if (multiSelectMode) {
-                toggleMultiSelect(holder.adapterPosition)
-            } else {
-                toggleMultiSelect(holder.adapterPosition)
-                onItemLongClick?.invoke(items[holder.adapterPosition])
-            }
+            onItemLongClick?.invoke(items[holder.adapterPosition])
             true
         }
     }

@@ -28,6 +28,7 @@ class PreviewActivity : AppCompatActivity() {
     private lateinit var audioTitle: TextView
     private lateinit var loader: ProgressBar
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,11 +96,12 @@ class PreviewActivity : AppCompatActivity() {
         val file = File(path)
         val uri = if (file.exists()) Uri.fromFile(file) else Uri.parse(path)
         val mp = MediaPlayer()
+        mediaPlayer = mp
         try {
             mp.setDataSource(this, uri)
             mp.prepare()
             mp.start()
-            mp.setOnCompletionListener { it.release() }
+            mp.setOnCompletionListener { it.release(); mediaPlayer = null }
             mp.setOnErrorListener { _, _, _ ->
                 mainHandler.post {
                     Toast.makeText(this, getString(R.string.open_audio_fail), Toast.LENGTH_SHORT).show()
@@ -113,7 +115,9 @@ class PreviewActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (videoView.isPlaying) videoView.stopPlayback()
+        try { if (videoView.isPlaying) videoView.stopPlayback() } catch (_: Exception) {}
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     companion object {

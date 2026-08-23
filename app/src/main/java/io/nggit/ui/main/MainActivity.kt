@@ -119,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         DragDividerView.leftPaneId = R.id.left_pane
         DragDividerView.rightPaneId = R.id.right_pane
         toolbar = findViewById(R.id.toolbar)
+        toolbar.setNavigationOnClickListener { showMoreMenu(toolbar) }
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_search -> { showSearchDialog(); true }

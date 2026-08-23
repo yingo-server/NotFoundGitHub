@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import io.nggit.R
@@ -42,6 +43,12 @@ class EditorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_editor)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBack()
+            }
+        })
 
         initViews()
         loadFile()
@@ -170,7 +177,7 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
-    override fun onBackPressed() {
+    private fun handleBack() {
         if (currentContent != originalContent) {
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.editor_unsaved))
@@ -178,13 +185,13 @@ class EditorActivity : AppCompatActivity() {
                 .setPositiveButton(getString(R.string.editor_save)) { _, _ ->
                     saveFile { finish() }
                 }
-                .setNegativeButton("不保存") { _, _ ->
+                .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                     finish()
                 }
                 .setNeutralButton(getString(R.string.cancel), null)
                 .show()
         } else {
-            super.onBackPressed()
+            finish()
         }
     }
 

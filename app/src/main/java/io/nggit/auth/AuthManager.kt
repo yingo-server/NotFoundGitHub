@@ -2,9 +2,9 @@ package io.nggit.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Base64
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.Base64
 
 object AuthManager {
     private const val PREF_NAME = "ng_auth"
@@ -32,15 +32,15 @@ object AuthManager {
         val token = prefs?.getString(KEY_TOKEN, null)
         if (token.isNullOrEmpty()) return null
         return try {
-            val encrypted = Base64.getDecoder().decode(token)
-            String(encrypted, Charsets.UTF_8)
+            val decoded = Base64.decode(token, Base64.DEFAULT)
+            String(decoded, Charsets.UTF_8)
         } catch (e: Exception) {
             token
         }
     }
 
     fun saveToken(token: String) {
-        val encoded = Base64.getEncoder().encodeToString(token.toByteArray(Charsets.UTF_8))
+        val encoded = Base64.encodeToString(token.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
         prefs?.edit()
             ?.putString(KEY_TOKEN, encoded)
             ?.putBoolean(KEY_IS_LOGGED_IN, true)
@@ -101,7 +101,7 @@ object AuthManager {
     private fun generateSalt(): String {
         val bytes = ByteArray(16)
         SecureRandom().nextBytes(bytes)
-        return Base64.getEncoder().encodeToString(bytes)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     private fun hashPassword(password: String, salt: String): String {

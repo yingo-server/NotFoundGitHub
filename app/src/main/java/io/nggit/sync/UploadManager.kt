@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger
 class UploadManager(private val context: Context) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val executor = Executors.newFixedThreadPool(8)
     private val api = App.instance.githubApi
     private val token = AuthManager.getToken() ?: ""
+    private val executor by lazy { Executors.newFixedThreadPool(4) }
 
     interface UploadCallback {
         fun onUploadStarted()
