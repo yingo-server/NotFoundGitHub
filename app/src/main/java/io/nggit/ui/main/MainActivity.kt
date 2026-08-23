@@ -157,6 +157,7 @@ class MainActivity : AppCompatActivity() {
         leftBackBtn.setOnClickListener { navigateBack(leftState) }
         leftForwardBtn.setOnClickListener { navigateForward(leftState) }
         leftSyncBtn.setOnClickListener { syncToOtherPane(leftState) }
+        leftPathText.setOnClickListener { showPathEditDialog(leftState) }
     }
 
     private fun setupRightPane() {
@@ -172,6 +173,7 @@ class MainActivity : AppCompatActivity() {
         rightBackBtn.setOnClickListener { navigateBack(rightState) }
         rightForwardBtn.setOnClickListener { navigateForward(rightState) }
         rightUpBtn.setOnClickListener { navigateUp(rightState) }
+        rightPathText.setOnClickListener { showPathEditDialog(rightState) }
     }
 
     private fun setupBottomBar() {
@@ -940,6 +942,57 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (pane.files.isNotEmpty()) { list.visibility = View.VISIBLE; empty.visibility = View.GONE }
+    }
+
+    private fun showPathEditDialog(pane: FilePaneState) {
+        val currentPath = if (pane.isRemote) {
+            if (pane.repoOwner.isNotEmpty()) {
+                val prefix = "${pane.repoOwner}/${pane.repoName}"
+                if (pane.currentPath.isNotEmpty()) "$prefix/${pane.currentPath}" else prefix
+            } else ""
+        } else {
+            StoragePath.getBasePath() + if (pane.currentPath.isNotEmpty()) "/${pane.currentPath}" else ""
+        }
+
+        val input = EditText(this).apply {
+            setText(currentPath)
+            setSelectAllOnFocus(true)
+            isSingleLine = true
+            setPadding(48, 32, 48, 16)
+            textSize = 14f
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Navigate to path")
+            .setView(input)
+            .setPositiveButton("Go") { _, _ ->
+                val newPath = input.text.toString().trim()
+                if (pane.isRemote) {
+                    val parts = newPath.split("/")
+                    if (parts.size >= 2) {
+                        pane.repoOwner = parts[0]
+                        pane.repoName = parts[1]
+                        pane.branch = "main"
+                        pane.currentPath = if (parts.size > 2) parts.subList(2, parts.size).joinToString("/") else ""
+                        pane.history.clear()
+                        pane.history.add(pane.currentPath)
+                        pane.historyIndex = 0
+                        loadRemoteFiles(pane)
+                    }
+                } else {
+                    val basePath = StoragePath.getBasePath()
+                    val target = File(newPath)
+                    if (target.exists() && target.isDirectory && target.path.startsWith(basePath)) {
+                        pane.currentPath = target.relativeTo(basePath).path.replace("\\", "/")
+                        pane.history.clear()
+                        pane.history.add(pane.currentPath)
+                        pane.historyIndex = 0
+                        loadLocalFiles()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun requestPermissions() {
