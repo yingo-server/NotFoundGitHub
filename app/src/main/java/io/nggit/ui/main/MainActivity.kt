@@ -983,7 +983,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     val basePath = StoragePath.getBasePath()
                     val target = File(newPath)
-                    if (target.exists() && target.isDirectory && target.path.startsWith(basePath)) {
+                    if (target.exists() && target.isDirectory && target.path.startsWith(basePath.path)) {
                         pane.currentPath = target.relativeTo(basePath).path.replace("\\", "/")
                         pane.history.clear()
                         pane.history.add(pane.currentPath)
