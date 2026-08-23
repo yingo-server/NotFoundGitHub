@@ -539,6 +539,7 @@ class MainActivity : AppCompatActivity() {
         if (activePane.isRemote && activePane.repoOwner.isNotEmpty()) {
             val starLabel = if (activePane.isStarred) "Unstar Repo" else "Star Repo"
             popup.menu.add(0, 10, 7, starLabel)
+            popup.menu.add(0, 11, 8, "Switch Branch")
         }
         popup.menu.add(0, 9, 8, "Create Repo")
         popup.menu.add(0, 5, 9, "Refresh")
@@ -558,6 +559,7 @@ class MainActivity : AppCompatActivity() {
                 8 -> toggleHiddenFiles()
                 9 -> showCreateRepoDialog()
                 10 -> toggleStarRepo()
+                11 -> showBranchSelector()
             }
             true
         }
@@ -718,6 +720,44 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, if (pane.isStarred) "Starred" else "Unstarred", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showBranchSelector() {
+        val pane = activePane
+        if (pane.repoOwner.isEmpty()) return
+        Toast.makeText(this, "Loading branches...", Toast.LENGTH_SHORT).show()
+        executor.execute {
+            try {
+                val branches = api.getBranches(token, pane.repoOwner, pane.repoName)
+                val names = branches.map { it.name }.toTypedArray()
+                mainHandler.post {
+                    if (branches.isEmpty()) {
+                        Toast.makeText(this, "No branches found", Toast.LENGTH_SHORT).show()
+                        return@post
+                    }
+                    AlertDialog.Builder(this)
+                        .setTitle("Select Branch")
+                        .setItems(names) { _, which ->
+                            val selected = names[which]
+                            if (selected != pane.branch) {
+                                pane.branch = selected
+                                pane.currentPath = ""
+                                pane.history.clear()
+                                pane.history.add("")
+                                pane.historyIndex = 0
+                                loadRemoteFiles(pane)
+                                Toast.makeText(this, "Branch: $selected", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        .setNegativeButton(R.string.cancel, null)
+                        .show()
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
