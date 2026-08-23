@@ -738,12 +738,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showFileContextMenu(pane: FilePaneState, file: FileInfo) {
-        val options = mutableListOf("Info", "Rename", "Copy Link")
+        val options = mutableListOf("Info", "Rename", "Copy Link", "Copy Path")
         if (pane.isRemote) {
             options.add("Delete")
             options.add("Download")
         } else {
             options.add("Share")
+            if (!file.isDir()) options.add("Open With")
         }
         if (!pane.isRemote) options.add("Copy to Remote")
         AlertDialog.Builder(this)
@@ -753,9 +754,11 @@ class MainActivity : AppCompatActivity() {
                     "Info" -> showFileInfo(pane, file)
                     "Rename" -> showRenameDialog(pane, file)
                     "Copy Link" -> copyFileLink(pane, file)
+                    "Copy Path" -> copyFilePath(pane, file)
                     "Delete" -> confirmDelete(pane, file)
                     "Download" -> downloadRemoteFile(pane, file)
                     "Share" -> shareLocalFile(file)
+                    "Open With" -> openLocalFileWith(file)
                     "Copy to Remote" -> copyLocalToRemote(pane, file)
                 }
             }.show()
@@ -856,7 +859,37 @@ class MainActivity : AppCompatActivity() {
             putExtra(android.content.Intent.EXTRA_STREAM, uri)
             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(android.content.Intent.createChooser(shareIntent, "Share ${file.name}"))
+        startActivity(android.content.Intent.createChooser(shareIntent, "Share"))
+    }
+
+    private fun copyFilePath(pane: FilePaneState, file: FileInfo) {
+        val fullPath = if (pane.isRemote && pane.repoOwner.isNotEmpty()) {
+            "${pane.repoOwner}/${pane.repoName}/${file.path}"
+        } else {
+            File(StoragePath.getBasePath(), file.path).absolutePath
+        }
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = android.content.ClipData.newPlainText("FilePath", fullPath)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(this, "Path copied", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun openLocalFileWith(file: FileInfo) {
+        val localFile = File(StoragePath.getBasePath(), file.path)
+        if (!localFile.exists()) {
+            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", localFile)
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, contentResolver.getType(uri))
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(android.content.Intent.createChooser(intent, "Open with"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "No app found", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showRenameDialog(pane: FilePaneState, file: FileInfo) {
