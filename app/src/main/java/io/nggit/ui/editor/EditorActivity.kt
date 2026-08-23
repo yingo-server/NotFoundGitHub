@@ -137,12 +137,12 @@ class EditorActivity : AppCompatActivity() {
             .show()
     }
 
+    private var isWordWrap = false
+
     private fun toggleWordWrap() {
-        editorText.inputType = if (editorText.inputType and android.text.InputType.TYPE_TEXT_FLAG_NO_WRAP != 0) {
-            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-        } else {
-            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_FLAG_NO_WRAP
-        }
+        isWordWrap = !isWordWrap
+        editorText.setHorizontallyScrolling(!isWordWrap)
+        Toast.makeText(this, if (isWordWrap) "Word wrap ON" else "Word wrap OFF", Toast.LENGTH_SHORT).show()
     }
 
     private fun loadFile() {
