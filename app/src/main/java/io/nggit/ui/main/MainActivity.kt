@@ -742,6 +742,8 @@ class MainActivity : AppCompatActivity() {
         if (pane.isRemote) {
             options.add("Delete")
             options.add("Download")
+        } else {
+            options.add("Share")
         }
         if (!pane.isRemote) options.add("Copy to Remote")
         AlertDialog.Builder(this)
@@ -753,6 +755,7 @@ class MainActivity : AppCompatActivity() {
                     "Copy Link" -> copyFileLink(pane, file)
                     "Delete" -> confirmDelete(pane, file)
                     "Download" -> downloadRemoteFile(pane, file)
+                    "Share" -> shareLocalFile(file)
                     "Copy to Remote" -> copyLocalToRemote(pane, file)
                 }
             }.show()
@@ -839,6 +842,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun shareLocalFile(file: FileInfo) {
+        val localFile = File(StoragePath.getBasePath(), file.path)
+        if (!localFile.exists()) {
+            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", localFile)
+        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = contentResolver.getType(uri) ?: "application/octet-stream"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(android.content.Intent.createChooser(shareIntent, "Share ${file.name}"))
     }
 
     private fun showRenameDialog(pane: FilePaneState, file: FileInfo) {
