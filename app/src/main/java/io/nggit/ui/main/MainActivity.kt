@@ -739,7 +739,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFileContextMenu(pane: FilePaneState, file: FileInfo) {
         val options = mutableListOf("Info", "Rename", "Copy Link")
-        if (pane.isRemote) options.add("Delete")
+        if (pane.isRemote) {
+            options.add("Delete")
+            options.add("Download")
+        }
         if (!pane.isRemote) options.add("Copy to Remote")
         AlertDialog.Builder(this)
             .setTitle(file.name)
@@ -749,6 +752,7 @@ class MainActivity : AppCompatActivity() {
                     "Rename" -> showRenameDialog(pane, file)
                     "Copy Link" -> copyFileLink(pane, file)
                     "Delete" -> confirmDelete(pane, file)
+                    "Download" -> downloadRemoteFile(pane, file)
                     "Copy to Remote" -> copyLocalToRemote(pane, file)
                 }
             }.show()
@@ -801,6 +805,38 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 Toast.makeText(this, if (success) "Copied to repo" else "Copy failed", Toast.LENGTH_SHORT).show()
                 if (success) loadRemoteFiles(leftState)
+            }
+        }
+    }
+
+    private fun downloadRemoteFile(pane: FilePaneState, file: FileInfo) {
+        if (file.isDir()) {
+            Toast.makeText(this, "Cannot download directories yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "Downloading ${file.name}...", Toast.LENGTH_SHORT).show()
+        executor.execute {
+            try {
+                val blob = api.getFileContent(token, pane.repoOwner, pane.repoName, file.path, file.sha ?: "", pane.branch)
+                val decoded = if (blob?.encoding == "base64") {
+                    android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
+                } else {
+                    blob?.content?.toByteArray() ?: ByteArray(0)
+                }
+                val localBase = StoragePath.getBasePath()
+                val targetDir = if (pane.currentPath.isEmpty()) localBase
+                else File(localBase, pane.currentPath)
+                targetDir.mkdirs()
+                val targetFile = File(targetDir, file.name)
+                targetFile.writeBytes(decoded)
+                mainHandler.post {
+                    Toast.makeText(this, "Downloaded to ${targetFile.path}", Toast.LENGTH_SHORT).show()
+                    loadLocalFiles()
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
