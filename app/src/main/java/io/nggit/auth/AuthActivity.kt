@@ -73,6 +73,21 @@ class AuthActivity : AppCompatActivity() {
         loginBtn.setOnClickListener { loginWithToken() }
         oauthBtn.setOnClickListener { startOAuth() }
         findViewById<Button>(R.id.password_confirm_btn).setOnClickListener { confirmPassword() }
+
+        findViewById<View>(R.id.paste_btn).setOnClickListener {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = clipboard.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val text = clip.getItemAt(0).text?.toString() ?: ""
+                if (text.isNotEmpty()) {
+                    tokenInput.setText(text.trim())
+                    tokenInput.setSelection(tokenInput.text.length)
+                    Toast.makeText(this, getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun handleOAuthCallback(intent: Intent?) {
