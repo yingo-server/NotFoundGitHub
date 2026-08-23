@@ -188,6 +188,16 @@ class GitHubApi(private val client: OkHttpClient) {
         }
     }
 
+    fun getFileCommits(token: String, owner: String, repo: String, path: String, branch: String = "main", perPage: Int = 10): List<CommitInfo> {
+        val url = "https://api.github.com/repos/$owner/$repo/commits?sha=$branch&path=$path&per_page=$perPage"
+        val json = getWithAuth(url, token) ?: return emptyList()
+        return try {
+            gson.fromJson(json, Array<CommitInfo>::class.java)?.toList() ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     fun getGitTree(token: String, owner: String, repo: String, sha: String, recursive: Boolean = true): GitTree? {
         val url = "https://api.github.com/repos/$owner/$repo/git/trees/$sha?recursive=${if (recursive) "1" else "0"}"
         val json = getWithAuth(url, token) ?: return null

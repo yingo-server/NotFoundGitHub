@@ -894,6 +894,7 @@ class MainActivity : AppCompatActivity() {
         if (pane.isRemote) {
             options.add("Delete")
             options.add("Download")
+            options.add("Git Log")
         } else {
             options.add("Share")
             options.add("Delete")
@@ -910,6 +911,7 @@ class MainActivity : AppCompatActivity() {
                     "Copy Path" -> copyFilePath(pane, file)
                     "Delete" -> confirmDelete(pane, file)
                     "Download" -> downloadRemoteFile(pane, file)
+                    "Git Log" -> showGitLog(pane, file)
                     "Share" -> shareLocalFile(file)
                     "Open With" -> openLocalFileWith(file)
                     "Copy to Remote" -> copyLocalToRemote(pane, file)
@@ -1011,6 +1013,42 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 mainHandler.post {
                     Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showGitLog(pane: FilePaneState, file: FileInfo) {
+        if (file.isDir()) {
+            Toast.makeText(this, "Git log for directories not supported", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "Loading commit history...", Toast.LENGTH_SHORT).show()
+        executor.execute {
+            try {
+                val commits = api.getFileCommits(token, pane.repoOwner, pane.repoName, file.path, pane.branch, 15)
+                mainHandler.post {
+                    if (commits.isEmpty()) {
+                        Toast.makeText(this, "No commits found", Toast.LENGTH_SHORT).show()
+                        return@post
+                    }
+                    val sb = StringBuilder()
+                    for (commit in commits.take(15)) {
+                        val msg = commit.message.take(50).replace("\n", " ")
+                        val author = commit.author.login
+                        sb.appendLine("$msg")
+                        sb.appendLine("  by $author  ${commit.sha.take(7)}")
+                        sb.appendLine()
+                    }
+                    AlertDialog.Builder(this)
+                        .setTitle("Git Log - ${file.name}")
+                        .setMessage(sb.toString())
+                        .setPositiveButton(R.string.ok, null)
+                        .show()
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
