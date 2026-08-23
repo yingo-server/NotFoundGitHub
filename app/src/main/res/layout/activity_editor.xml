@@ -118,4 +118,20 @@
         </ScrollView>
     </FrameLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <TextView
+        android:id="@+id/editor_status"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:textSize="10sp"
+        android:textColor="@color/text_hint"
+        android:background="@color/surface"
+        android:text="Ln 1, Col 1 | 0 words" />
+
 </LinearLayout>

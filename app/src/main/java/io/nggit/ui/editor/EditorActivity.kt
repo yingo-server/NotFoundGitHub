@@ -24,6 +24,7 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var btnSave: Button
     private lateinit var btnBack: ImageButton
     private lateinit var btnSearch: ImageButton
+    private lateinit var statusText: TextView
 
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -64,6 +65,7 @@ class EditorActivity : AppCompatActivity() {
         btnSave = findViewById(R.id.btn_save)
         btnBack = findViewById(R.id.btn_back)
         btnSearch = findViewById(R.id.btn_search)
+        statusText = findViewById(R.id.editor_status)
 
         filePath = intent.getStringExtra("file_path") ?: ""
         fileName = intent.getStringExtra("file_name") ?: ""
@@ -93,8 +95,16 @@ class EditorActivity : AppCompatActivity() {
                     btnSave.visibility = View.GONE
                     fileNameText.text = fileName
                 }
+                updateStatusBar()
             }
         })
+    }
+
+    private fun updateStatusBar() {
+        val text = editorText.text.toString()
+        val lines = text.split("\n").size
+        val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+        statusText.text = "Ln $lines | $words words"
     }
 
     private fun loadFile() {

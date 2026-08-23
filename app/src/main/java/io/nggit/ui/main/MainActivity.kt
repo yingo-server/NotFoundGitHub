@@ -943,6 +943,15 @@ class MainActivity : AppCompatActivity() {
         val empty = if (pane == leftState) leftEmptyView else rightEmptyView
         val pathBar = if (pane == leftState) leftPathBar else rightPathBar
 
+        // Update toolbar title
+        if (pane.isRemote && pane.repoOwner.isNotEmpty()) {
+            title = "${pane.repoOwner}/${pane.repoName}"
+        } else if (!pane.isRemote) {
+            title = getString(R.string.app_name) + " - Local"
+        } else {
+            title = getString(R.string.app_name)
+        }
+
         // Build breadcrumb path
         pathBar.removeViews(2, pathBar.childCount - 3)
         val segments = mutableListOf<String>()
