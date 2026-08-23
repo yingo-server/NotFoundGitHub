@@ -16,7 +16,12 @@ import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import io.nggit.R
+import io.nggit.auth.AuthManager
+import io.nggit.service.GitHubApi
+import io.nggit.util.StoragePath
 import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.Executors
 
 class PreviewActivity : AppCompatActivity() {
 
@@ -28,6 +33,8 @@ class PreviewActivity : AppCompatActivity() {
     private lateinit var audioTitle: TextView
     private lateinit var loader: ProgressBar
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val executor = Executors.newSingleThreadExecutor()
+    private val api = GitHubApi()
     private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,83 +53,206 @@ class PreviewActivity : AppCompatActivity() {
 
         val filePath = intent.getStringExtra("file_path") ?: ""
         val fileName = intent.getStringExtra("file_name") ?: ""
+        val repoOwner = intent.getStringExtra("repo_owner") ?: ""
+        val repoBranch = intent.getStringExtra("repo_branch") ?: "main"
+        val fileSha = intent.getStringExtra("file_sha") ?: ""
+        val repoName = intent.getStringExtra("repo_name") ?: ""
         titleText.text = fileName
 
-        val ext = fileName.substringAfterLast('.', "").lowercase()
+        val ext = fileName.substringAfterLast('.', '').lowercase()
         when {
-            IMAGE_EXTS.contains(ext) -> showImage(filePath)
-            VIDEO_EXTS.contains(ext) -> showVideo(filePath)
-            AUDIO_EXTS.contains(ext) -> showAudio(filePath, fileName)
+            IMAGE_EXTS.contains(ext) -> loadAndShowImage(filePath, repoOwner, repoName, repoBranch, fileSha)
+            VIDEO_EXTS.contains(ext) -> loadAndShowVideo(filePath, repoOwner, repoName, repoBranch, fileSha)
+            AUDIO_EXTS.contains(ext) -> loadAndShowAudio(filePath, repoOwner, repoName, repoBranch, fileSha, fileName)
             else -> { finish() }
         }
     }
 
-    private fun showImage(path: String) {
+    private fun downloadToTempFile(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String): File? {
+        val token = AuthManager.getToken() ?: return null
+        if (fileSha.isEmpty()) return null
+        val blob = api.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        val decoded = when (blob.encoding) {
+            "base64" -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
+            else -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
+        }
+        val ext = filePath.substringAfterLast('.', "")
+        val tempFile = File(cacheDir, "preview_${System.currentTimeMillis()}.$ext")
+        FileOutputStream(tempFile).use { it.write(decoded) }
+        return tempFile
+    }
+
+    private fun loadAndShowImage(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String) {
+        if (repoOwner.isEmpty()) {
+            showImageLocal(filePath)
+            return
+        }
+        executor.execute {
+            try {
+                val tempFile = downloadToTempFile(filePath, repoOwner, repoName, repoBranch, fileSha)
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    imageView.visibility = View.VISIBLE
+                    if (tempFile != null && tempFile.exists()) {
+                        Glide.with(this).load(tempFile).into(imageView)
+                    } else {
+                        Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    Toast.makeText(this, "Load failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun showImageLocal(path: String) {
         loader.visibility = View.GONE
         imageView.visibility = View.VISIBLE
         val file = File(path)
         if (file.exists()) {
             Glide.with(this).load(file).into(imageView)
         } else {
-            val uri = Uri.parse(path)
-            Glide.with(this).load(uri).into(imageView)
+            val basePath = StoragePath.getBasePath()
+            val localFile = File(basePath, path)
+            if (localFile.exists()) {
+                Glide.with(this).load(localFile).into(imageView)
+            } else {
+                Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
     }
 
-    private fun showVideo(path: String) {
+    private fun loadAndShowVideo(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String) {
+        if (repoOwner.isEmpty()) {
+            showVideoLocal(filePath)
+            return
+        }
+        executor.execute {
+            try {
+                val tempFile = downloadToTempFile(filePath, repoOwner, repoName, repoBranch, fileSha)
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    videoView.visibility = View.VISIBLE
+                    if (tempFile != null && tempFile.exists()) {
+                        val mc = MediaController(this)
+                        mc.setAnchorView(videoView)
+                        videoView.setMediaController(mc)
+                        videoView.setVideoURI(Uri.fromFile(tempFile))
+                        videoView.start()
+                    } else {
+                        Toast.makeText(this, "Failed to load video", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    Toast.makeText(this, "Load failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun showVideoLocal(path: String) {
         loader.visibility = View.GONE
         videoView.visibility = View.VISIBLE
         val file = File(path)
-        val uri = if (file.exists()) Uri.fromFile(file) else Uri.parse(path)
+        val uri = if (file.exists()) Uri.fromFile(file) else {
+            val basePath = StoragePath.getBasePath()
+            val localFile = File(basePath, path)
+            if (localFile.exists()) Uri.fromFile(localFile) else null
+        }
+        if (uri == null) {
+            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
         val mc = MediaController(this)
         mc.setAnchorView(videoView)
         videoView.setMediaController(mc)
         videoView.setVideoURI(uri)
-        videoView.setOnPreparedListener { it.start() }
-        videoView.setOnErrorListener { _, _, _ ->
-            mainHandler.post {
-                Toast.makeText(this, getString(R.string.open_video_fail), Toast.LENGTH_SHORT).show()
-                finish()
-            }
-            true
-        }
         videoView.start()
     }
 
-    private fun showAudio(path: String, name: String) {
+    private fun loadAndShowAudio(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String, fileName: String) {
+        if (repoOwner.isEmpty()) {
+            showAudioLocal(filePath, fileName)
+            return
+        }
+        executor.execute {
+            try {
+                val tempFile = downloadToTempFile(filePath, repoOwner, repoName, repoBranch, fileSha)
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    audioInfo.visibility = View.VISIBLE
+                    audioTitle.text = fileName
+                    if (tempFile != null && tempFile.exists()) {
+                        mediaPlayer = MediaPlayer().apply {
+                            setDataSource(this@PreviewActivity, Uri.fromFile(tempFile))
+                            prepare()
+                            start()
+                            setOnCompletionListener {
+                                Toast.makeText(this@PreviewActivity, "Playback complete", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this, "Failed to load audio", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            } catch (e: Exception) {
+                mainHandler.post {
+                    loader.visibility = View.GONE
+                    Toast.makeText(this, "Load failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun showAudioLocal(path: String, fileName: String) {
         loader.visibility = View.GONE
         audioInfo.visibility = View.VISIBLE
-        audioTitle.text = name
+        audioTitle.text = fileName
         val file = File(path)
-        val uri = if (file.exists()) Uri.fromFile(file) else Uri.parse(path)
-        val mp = MediaPlayer()
-        mediaPlayer = mp
-        try {
-            mp.setDataSource(this, uri)
-            mp.prepare()
-            mp.start()
-            mp.setOnCompletionListener { it.release(); mediaPlayer = null }
-            mp.setOnErrorListener { _, _, _ ->
-                mainHandler.post {
-                    Toast.makeText(this, getString(R.string.open_audio_fail), Toast.LENGTH_SHORT).show()
-                }
-                true
+        val uri = if (file.exists()) Uri.fromFile(file) else {
+            val basePath = StoragePath.getBasePath()
+            val localFile = File(basePath, path)
+            if (localFile.exists()) Uri.fromFile(localFile) else null
+        }
+        if (uri == null) {
+            Toast.makeText(this, "File not found", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(this@PreviewActivity, uri)
+            prepare()
+            start()
+            setOnCompletionListener {
+                Toast.makeText(this@PreviewActivity, "Playback complete", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.open_audio_fail), Toast.LENGTH_SHORT).show()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        try { if (videoView.isPlaying) videoView.stopPlayback() } catch (_: Exception) {}
         mediaPlayer?.release()
         mediaPlayer = null
+        mainHandler.removeCallbacksAndMessages(null)
+        executor.shutdownNow()
     }
 
     companion object {
-        private val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "tiff")
-        private val VIDEO_EXTS = setOf("mp4", "avi", "mkv", "mov", "wmv", "webm", "flv")
-        private val AUDIO_EXTS = setOf("mp3", "wav", "ogg", "m4a", "aac", "flac", "wma")
+        private val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "gif", "webp", "svg", "bmp")
+        private val VIDEO_EXTS = setOf("mp4", "avi", "mkv", "mov", "wmv", "webm")
+        private val AUDIO_EXTS = setOf("mp3", "wav", "ogg", "m4a", "aac", "flac")
     }
 }

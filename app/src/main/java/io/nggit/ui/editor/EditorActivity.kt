@@ -9,7 +9,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import io.nggit.R
+import io.nggit.auth.AuthManager
+import io.nggit.service.GitHubApi
 import io.nggit.util.EncodingDetector
+import io.nggit.util.StoragePath
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -29,12 +32,14 @@ class EditorActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val api = GitHubApi()
 
     private var filePath: String = ""
     private var fileName: String = ""
     private var originalContent: String = ""
     private var currentContent: String = ""
     private var isPreviewMode: Boolean = false
+    private var isRemote: Boolean = false
 
     private var repoOwner: String = ""
     private var repoName: String = ""
@@ -76,15 +81,13 @@ class EditorActivity : AppCompatActivity() {
         repoBranch = intent.getStringExtra("repo_branch") ?: "main"
         isStarred = intent.getBooleanExtra("is_starred", false)
         fileSha = intent.getStringExtra("file_sha") ?: ""
+        isRemote = repoOwner.isNotEmpty()
 
         fileNameText.text = fileName
 
         btnBack.setOnClickListener { finish() }
-
         btnSave.setOnClickListener { saveFile() }
-
         btnSearch.setOnClickListener { showGoToLineDialog() }
-
         btnWrap.setOnClickListener { toggleWordWrap() }
 
         editorText.addTextChangedListener(object : android.text.TextWatcher {
@@ -108,7 +111,9 @@ class EditorActivity : AppCompatActivity() {
         val text = editorText.text.toString()
         val lines = text.split("\n").size
         val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
-        statusText.text = "Ln $lines | $words words"
+        val bytes = text.toByteArray(Charsets.UTF_8).size
+        val sizeStr = if (bytes < 1024) "${bytes}B" else "${bytes / 1024}KB"
+        statusText.text = "Ln $lines | $words words | $sizeStr"
     }
 
     private fun showGoToLineDialog() {
@@ -151,10 +156,12 @@ class EditorActivity : AppCompatActivity() {
 
         executor.execute {
             try {
-                val file = File(filePath)
-                if (file.exists()) {
-                    val charset = EncodingDetector.detect(file)
-                    val content = file.readText(charset)
+                val content = if (isRemote) {
+                    loadRemoteFile()
+                } else {
+                    loadLocalFile()
+                }
+                if (content != null) {
                     mainHandler.post {
                         originalContent = content
                         currentContent = content
@@ -181,6 +188,42 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadRemoteFile(): String? {
+        val token = AuthManager.getToken() ?: return null
+        if (fileSha.isEmpty()) return null
+        val blob = api.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        return when (blob.encoding) {
+            "base64" -> {
+                val decoded = android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
+                String(decoded, Charsets.UTF_8)
+            }
+            "utf-8", "none" -> blob.content
+            else -> {
+                val decoded = android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
+                String(decoded, Charsets.UTF_8)
+            }
+        }
+    }
+
+    private fun loadLocalFile(): String? {
+        val basePath = StoragePath.getBasePath()
+        val file = if (filePath.isEmpty()) {
+            File(basePath, fileName)
+        } else {
+            File(basePath, filePath)
+        }
+        if (!file.exists()) {
+            val file2 = File(filePath)
+            if (file2.exists()) {
+                val charset = EncodingDetector.detect(file2)
+                return file2.readText(charset)
+            }
+            return null
+        }
+        val charset = EncodingDetector.detect(file)
+        return file.readText(charset)
+    }
+
     private fun saveFile(onDone: (() -> Unit)? = null) {
         val content = editorText.text.toString()
         if (content == originalContent) {
@@ -190,39 +233,48 @@ class EditorActivity : AppCompatActivity() {
 
         executor.execute {
             try {
-                val file = File(filePath)
-                file.writeText(content, Charsets.UTF_8)
+                if (isRemote) {
+                    saveRemoteFile(content)
+                } else {
+                    saveLocalFile(content)
+                }
                 originalContent = content
                 currentContent = content
-
                 mainHandler.post {
                     btnSave.visibility = View.GONE
                     fileNameText.text = fileName
-                    Toast.makeText(this, getString(R.string.editor_saved_local), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)
                     onDone?.invoke()
                 }
             } catch (e: Exception) {
                 mainHandler.post {
-                    Toast.makeText(this, getString(R.string.editor_save_fail, e.message), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Save failed: ${e.message}", Toast.LENGTH_SHORT).show()
                     onDone?.invoke()
                 }
             }
         }
     }
 
-    private fun togglePreview() {
-        if (isPreviewMode) {
-            previewText.visibility = View.GONE
-            editorPreview.visibility = View.GONE
-            editorText.visibility = View.VISIBLE
-            isPreviewMode = false
+    private fun saveRemoteFile(content: String) {
+        val token = AuthManager.getToken() ?: throw Exception("Not logged in")
+        val commitMessage = "Update $fileName via NGGit"
+        val result = api.createOrUpdateFile(token, repoOwner, repoName, filePath, content, fileSha, commitMessage, repoBranch)
+            ?: throw Exception("API error")
+        fileSha = result.commit?.sha ?: fileSha
+    }
+
+    private fun saveLocalFile(content: String) {
+        val basePath = StoragePath.getBasePath()
+        val file = if (filePath.isEmpty()) {
+            File(basePath, fileName)
         } else {
-            editorText.visibility = View.GONE
-            previewText.text = editorText.text
-            editorPreview.visibility = View.VISIBLE
-            isPreviewMode = true
+            File(basePath, filePath)
         }
+        if (!file.parentFile?.exists()!!) {
+            file.parentFile?.mkdirs()
+        }
+        file.writeText(content, Charsets.UTF_8)
     }
 
     private fun handleBack() {

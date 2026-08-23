@@ -373,13 +373,17 @@ class MainActivity : AppCompatActivity() {
         val ext = file.getExtension()
         if (isMediaFile(ext)) {
             val intent = Intent(this, PreviewActivity::class.java).apply {
-                putExtra("file_path", file.downloadUrl ?: "")
+                putExtra("file_path", file.path)
                 putExtra("file_name", file.name)
+                putExtra("repo_owner", pane.repoOwner)
+                putExtra("repo_name", pane.repoName)
+                putExtra("repo_branch", pane.branch)
+                putExtra("file_sha", file.sha)
             }
             startActivity(intent)
         } else {
             val intent = Intent(this, EditorActivity::class.java).apply {
-                putExtra("file_path", file.downloadUrl ?: "")
+                putExtra("file_path", file.path)
                 putExtra("file_name", file.name)
                 putExtra("repo_owner", pane.repoOwner)
                 putExtra("repo_name", pane.repoName)
