@@ -775,6 +775,7 @@ class MainActivity : AppCompatActivity() {
             options.add("Download")
         } else {
             options.add("Share")
+            options.add("Delete")
             if (!file.isDir()) options.add("Open With")
         }
         if (!pane.isRemote) options.add("Copy to Remote")
@@ -966,10 +967,20 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.delete_title)
             .setMessage(getString(R.string.file_delete_confirm, file.name))
             .setPositiveButton(R.string.file_delete) { _, _ ->
-                UploadManager(this).deleteFile(pane.repoOwner, pane.repoName, pane.branch, file.path, file.sha) { success ->
-                    runOnUiThread {
-                        Toast.makeText(this, if (success) getString(R.string.delete_success) else getString(R.string.delete_fail), Toast.LENGTH_SHORT).show()
-                        if (success) loadRemoteFiles(pane)
+                if (pane.isRemote) {
+                    UploadManager(this).deleteFile(pane.repoOwner, pane.repoName, pane.branch, file.path, file.sha) { success ->
+                        runOnUiThread {
+                            Toast.makeText(this, if (success) getString(R.string.delete_success) else getString(R.string.delete_fail), Toast.LENGTH_SHORT).show()
+                            if (success) loadRemoteFiles(pane)
+                        }
+                    }
+                } else {
+                    val localFile = File(StoragePath.getBasePath(), file.path)
+                    if (localFile.delete()) {
+                        Toast.makeText(this, getString(R.string.delete_success), Toast.LENGTH_SHORT).show()
+                        loadLocalFiles()
+                    } else {
+                        Toast.makeText(this, getString(R.string.delete_fail), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
