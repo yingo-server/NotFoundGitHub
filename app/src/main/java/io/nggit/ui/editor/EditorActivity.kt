@@ -190,7 +190,7 @@ class EditorActivity : AppCompatActivity() {
     private fun loadRemoteFile(): String? {
         val token = AuthManager.getToken() ?: return null
         if (fileSha.isEmpty()) return null
-        val blob = App.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        val blob = App.instance.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
         return when (blob.encoding) {
             "base64" -> {
                 val decoded = android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
@@ -258,7 +258,7 @@ class EditorActivity : AppCompatActivity() {
     private fun saveRemoteFile(content: String) {
         val token = AuthManager.getToken() ?: throw Exception("Not logged in")
         val commitMessage = "Update $fileName via NGGit"
-        val result = App.githubApi.createOrUpdateFile(token, repoOwner, repoName, filePath, content, fileSha, commitMessage, repoBranch)
+        val result = App.instance.githubApi.createOrUpdateFile(token, repoOwner, repoName, filePath, content, fileSha, commitMessage, repoBranch)
             ?: throw Exception("API error")
         fileSha = result.commit?.sha ?: fileSha
     }

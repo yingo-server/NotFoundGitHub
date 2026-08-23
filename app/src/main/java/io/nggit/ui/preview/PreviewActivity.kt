@@ -71,7 +71,7 @@ class PreviewActivity : AppCompatActivity() {
     private fun downloadToTempFile(filePath: String, repoOwner: String, repoName: String, repoBranch: String, fileSha: String): File? {
         val token = AuthManager.getToken() ?: return null
         if (fileSha.isEmpty()) return null
-        val blob = App.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
+        val blob = App.instance.githubApi.getFileContent(token, repoOwner, repoName, filePath, fileSha, repoBranch) ?: return null
         val decoded = when (blob.encoding) {
             "base64" -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
             else -> android.util.Base64.decode(blob.content, android.util.Base64.DEFAULT)
