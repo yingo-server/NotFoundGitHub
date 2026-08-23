@@ -24,6 +24,7 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var btnSave: Button
     private lateinit var btnBack: ImageButton
     private lateinit var btnSearch: ImageButton
+    private lateinit var btnWrap: ImageButton
     private lateinit var statusText: TextView
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -65,6 +66,7 @@ class EditorActivity : AppCompatActivity() {
         btnSave = findViewById(R.id.btn_save)
         btnBack = findViewById(R.id.btn_back)
         btnSearch = findViewById(R.id.btn_search)
+        btnWrap = findViewById(R.id.btn_wrap)
         statusText = findViewById(R.id.editor_status)
 
         filePath = intent.getStringExtra("file_path") ?: ""
@@ -81,7 +83,9 @@ class EditorActivity : AppCompatActivity() {
 
         btnSave.setOnClickListener { saveFile() }
 
-        btnSearch.setOnClickListener { togglePreview() }
+        btnSearch.setOnClickListener { showGoToLineDialog() }
+
+        btnWrap.setOnClickListener { toggleWordWrap() }
 
         editorText.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -105,6 +109,40 @@ class EditorActivity : AppCompatActivity() {
         val lines = text.split("\n").size
         val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
         statusText.text = "Ln $lines | $words words"
+    }
+
+    private fun showGoToLineDialog() {
+        val text = editorText.text.toString()
+        val totalLines = text.split("\n").size
+        val input = EditText(this).apply {
+            hint = "Line 1-$totalLines"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setPadding(60, 40, 60, 20)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Go to line")
+            .setView(input)
+            .setPositiveButton("Go") { _, _ ->
+                val line = input.text.toString().toIntOrNull()
+                if (line != null && line in 1..totalLines) {
+                    val lines = text.split("\n")
+                    var offset = 0
+                    for (i in 0 until line - 1) {
+                        offset += lines[i].length + 1
+                    }
+                    editorText.setSelection(offset.coerceAtMost(editorText.text.length))
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun toggleWordWrap() {
+        editorText.inputType = if (editorText.inputType and android.text.InputType.TYPE_TEXT_FLAG_NO_WRAP != 0) {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        } else {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or android.text.InputType.TYPE_TEXT_FLAG_NO_WRAP
+        }
     }
 
     private fun loadFile() {
