@@ -540,6 +540,7 @@ class MainActivity : AppCompatActivity() {
             val starLabel = if (activePane.isStarred) "Unstar Repo" else "Star Repo"
             popup.menu.add(0, 10, 7, starLabel)
             popup.menu.add(0, 11, 8, "Switch Branch")
+            popup.menu.add(0, 12, 9, "Create Branch")
         }
         popup.menu.add(0, 9, 8, "Create Repo")
         popup.menu.add(0, 5, 9, "Refresh")
@@ -560,6 +561,7 @@ class MainActivity : AppCompatActivity() {
                 9 -> showCreateRepoDialog()
                 10 -> toggleStarRepo()
                 11 -> showBranchSelector()
+                12 -> showCreateBranchDialog()
             }
             true
         }
@@ -767,6 +769,52 @@ class MainActivity : AppCompatActivity() {
         val dialog = SearchDialog()
         dialog.setOnRepoSelectedListener { owner, repo -> openRepoByOwner(owner, repo) }
         dialog.show(supportFragmentManager, "search")
+    }
+
+    private fun showCreateBranchDialog() {
+        val pane = activePane
+        if (pane.repoOwner.isEmpty()) return
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 20)
+        }
+        val nameInput = EditText(this).apply {
+            hint = "New branch name"
+            setPadding(0, 0, 0, 16)
+        }
+        val fromText = TextView(this).apply {
+            text = "From: ${pane.branch}"
+            textSize = 12f
+            setPadding(0, 0, 0, 8)
+        }
+        layout.addView(fromText)
+        layout.addView(nameInput)
+        AlertDialog.Builder(this)
+            .setTitle("Create Branch")
+            .setView(layout)
+            .setPositiveButton("Create") { _, _ ->
+                val name = nameInput.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    executor.execute {
+                        val success = api.createBranch(token, pane.repoOwner, pane.repoName, name, pane.branch)
+                        mainHandler.post {
+                            if (success) {
+                                Toast.makeText(this, "Branch created: $name", Toast.LENGTH_SHORT).show()
+                                pane.branch = name
+                                pane.currentPath = ""
+                                pane.history.clear()
+                                pane.history.add("")
+                                pane.historyIndex = 0
+                                loadRemoteFiles(pane)
+                            } else {
+                                Toast.makeText(this, "Failed to create branch", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun showNewFileDialog() {
