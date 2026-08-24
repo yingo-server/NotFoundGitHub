@@ -1,3 +1,7 @@
+/**
+ * 认证活动界面类，提供用户登录认证的完整交互界面，支持Token直接登录、
+ * OAuth授权登录以及应用密码验证等多种认证方式，是用户进入应用的首个入口界面。
+ */
 package io.nggit.auth
 
 import android.app.AlertDialog
@@ -37,6 +41,7 @@ class AuthActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var passwordSection: LinearLayout
 
+    /** 活动创建时初始化界面和认证状态检查 */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_auth)
@@ -56,11 +61,13 @@ class AuthActivity : AppCompatActivity() {
         handleOAuthCallback(intent)
     }
 
+    /** 处理新的Activity Intent，主要用于OAuth回调处理 */
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         handleOAuthCallback(intent)
     }
 
+    /** 初始化界面视图组件，绑定按钮点击事件和粘贴功能 */
     private fun initViews() {
         tokenInput = findViewById(R.id.token_input)
         loginBtn = findViewById(R.id.login_btn)
@@ -90,6 +97,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
+    /** 处理OAuth授权回调数据，从GitHub获取访问令牌 */
     private fun handleOAuthCallback(intent: Intent?) {
         val data = intent?.data ?: return
         if (data.scheme == "gk" && data.host == "login") {
@@ -102,6 +110,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
+    /** 启动GitHub OAuth授权流程，打开浏览器进行授权 */
     private fun startOAuth() {
         val clientId = App.CLIENT_ID
         val redirectUri = URLEncoder.encode(App.REDIRECT_URI, "UTF-8")
@@ -112,6 +121,7 @@ class AuthActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    /** 用授权码交换访问令牌，完成OAuth认证流程 */
     private fun exchangeToken(code: String) {
         val body = FormBody.Builder()
             .add("client_id", App.CLIENT_ID)
@@ -156,6 +166,7 @@ class AuthActivity : AppCompatActivity() {
         })
     }
 
+    /** 使用Token直接登录，验证Token有效性并获取用户信息 */
     private fun loginWithToken() {
         val token = tokenInput.text.toString().trim()
         if (token.isEmpty()) {
@@ -214,6 +225,7 @@ class AuthActivity : AppCompatActivity() {
         })
     }
 
+    /** 异步获取GitHub用户详细信息，用于完善本地用户资料 */
     private fun fetchUserInfo() {
         val token = AuthManager.getToken() ?: return
 
@@ -250,6 +262,7 @@ class AuthActivity : AppCompatActivity() {
         })
     }
 
+    /** 显示应用密码设置或验证界面 */
     private fun showPasswordSetup() {
         if (AuthManager.hasAppPassword()) {
             passwordSection.visibility = View.VISIBLE
@@ -262,6 +275,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
+    /** 显示密码设置对话框，首次登录时引导用户设置应用密码 */
     private fun showPasswordSetupDialog() {
         val input = EditText(this).apply {
             hint = getString(R.string.auth_set_password)
@@ -308,6 +322,7 @@ class AuthActivity : AppCompatActivity() {
             .show()
     }
 
+    /** 根据用户状态显示密码验证界面或直接进入主界面 */
     private fun showPasswordOrMain() {
         if (AuthManager.hasAppPassword()) {
             passwordSection.visibility = View.VISIBLE
@@ -320,6 +335,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
+    /** 验证用户输入的应用密码是否正确，通过后进入主界面 */
     private fun confirmPassword() {
         val password = passwordInput.text.toString()
         if (password.isEmpty()) {
@@ -333,6 +349,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
+    /** 跳转到应用主界面，完成认证流程 */
     private fun goToMain() {
         try {
             StoragePath.ensureDirectories()
@@ -343,6 +360,7 @@ class AuthActivity : AppCompatActivity() {
         finish()
     }
 
+    /** 控制加载进度条和状态文本的显示隐藏 */
     private fun showLoading(show: Boolean, message: String = getString(R.string.loading)) {
         progressBar.visibility = if (show) View.VISIBLE else View.GONE
         statusText.visibility = if (show) View.VISIBLE else View.GONE

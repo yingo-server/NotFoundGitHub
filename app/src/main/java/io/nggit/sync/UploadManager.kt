@@ -1,3 +1,11 @@
+/**
+ * 文件上传管理器，负责批量文件的GitHub API上传操作，支持重试机制、进度回调、新建文件和文件夹、文件删除和重命名等远程文件操作，采用4线程并发池加速上传。
+ * 该管理器封装了与GitHub仓库文件交互的核心功能，支持文件的创建、更新、删除和重命名操作。
+ * 通过多线程并发池实现批量文件的并行上传，显著提升上传效率，每个上传任务支持最多3次自动重试。
+ * 提供完整的进度回调机制，包括上传开始、进度更新、完成和错误处理等状态通知。
+ * 同时支持文件夹的创建（通过.gitkeep文件实现）和文件的远程重命名操作。
+ * 上传完成后自动更新本地提交记录，确保本地与远程仓库状态同步。
+ */
 package io.nggit.sync
 
 import android.content.Context
@@ -21,13 +29,40 @@ class UploadManager(private val context: Context) {
     private val token = AuthManager.getToken() ?: ""
     private val executor by lazy { Executors.newFixedThreadPool(4) }
 
+    /**
+     * 上传回调接口，定义了文件上传过程中各个阶段的回调方法。
+     * 包括上传开始、进度更新、完成和错误处理等回调函数。
+     */
     interface UploadCallback {
+        /**
+         * 上传开始时回调，通知调用方文件上传操作已经启动。
+         */
         fun onUploadStarted()
+
+        /**
+         * 上传进度更新回调，提供当前已处理文件数、总文件数和当前文件名信息。
+         * 参数current为当前已处理的文件数量，total为总文件数量，fileName为当前处理的文件名。
+         */
         fun onUploadProgress(current: Int, total: Int, fileName: String)
+
+        /**
+         * 上传完成回调，提供成功和失败的文件数量统计。
+         * 参数successCount为成功上传的文件数量，failCount为上传失败的文件数量。
+         */
         fun onUploadCompleted(successCount: Int, failCount: Int)
+
+        /**
+         * 上传错误回调，提供错误信息描述。
+         * 参数error为错误描述字符串，用于向用户显示错误原因。
+         */
         fun onUploadError(error: String)
     }
 
+    /**
+     * 批量上传文件到指定的GitHub仓库，支持重试机制和进度回调。
+     * 参数owner为仓库所有者，repo为仓库名称，branch为目标分支，isStarred为是否已收藏，
+     * files为待上传的文件三元组列表（路径、内容、现有SHA），callback为上传回调接口。
+     */
     fun uploadFiles(
         owner: String,
         repo: String,
@@ -111,6 +146,10 @@ class UploadManager(private val context: Context) {
         }
     }
 
+    /**
+     * 准备上传文件列表，扫描指定仓库路径下的所有文件并构建上传任务列表。
+     * 参数repoPath为本地仓库根目录，返回待上传文件的三元组列表（相对路径、文件内容、SHA值）。
+     */
     fun prepareUploadList(repoPath: File): List<Triple<String, String, String?>> {
         val files = mutableListOf<Triple<String, String, String?>>()
 
@@ -136,6 +175,11 @@ class UploadManager(private val context: Context) {
         return files
     }
 
+    /**
+     * 在远程仓库中创建新文件，通过GitHub API在指定路径创建空文件或包含初始内容的文件。
+     * 参数owner为仓库所有者，repo为仓库名称，branch为目标分支，path为文件路径，
+     * content为文件内容（默认为空字符串），callback为操作结果回调函数。
+     */
     fun createNewFile(
         owner: String,
         repo: String,
@@ -154,6 +198,11 @@ class UploadManager(private val context: Context) {
         }
     }
 
+    /**
+     * 在远程仓库中创建新文件夹，通过创建.gitkeep占位文件实现文件夹的创建。
+     * 参数owner为仓库所有者，repo为仓库名称，branch为目标分支，folderPath为文件夹路径，
+     * callback为操作结果回调函数。
+     */
     fun createNewFolder(
         owner: String,
         repo: String,
@@ -165,6 +214,11 @@ class UploadManager(private val context: Context) {
         createNewFile(owner, repo, branch, gitkeepPath, "", callback)
     }
 
+    /**
+     * 删除远程仓库中的指定文件，先获取文件的真实SHA值，然后执行删除操作。
+     * 参数owner为仓库所有者，repo为仓库名称，branch为目标分支，path为文件路径，
+     * sha为文件SHA值（备用参数），callback为操作结果回调函数。
+     */
     fun deleteFile(
         owner: String,
         repo: String,
@@ -188,6 +242,11 @@ class UploadManager(private val context: Context) {
         }
     }
 
+    /**
+     * 重命名远程仓库中的文件或文件夹，通过创建新文件并删除旧文件实现重命名操作。
+     * 参数owner为仓库所有者，repo为仓库名称，branch为目标分支，oldPath为旧路径，
+     * newPath为新路径，sha为文件SHA值，content为文件内容，callback为操作结果回调函数。
+     */
     fun renameItem(
         owner: String,
         repo: String,

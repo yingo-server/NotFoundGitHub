@@ -1,3 +1,9 @@
+/**
+ * 主界面Activity，实现NP Manager风格的双栏文件管理布局，左栏为GitHub远程仓库文件浏览器，右栏为本地存储文件管理器，
+ * 支持路径同步、文件复制粘贴、多选操作、面包屑导航、排序切换等核心文件管理功能。
+ * 本Activity负责协调左右两个面板的数据加载、文件操作、导航控制以及用户交互响应，
+ * 同时集成了GitHub API接口以实现远程仓库的浏览、创建、分支管理、文件上传下载等操作。
+ */
 package io.nggit.ui.main
 
 import android.Manifest
@@ -88,6 +94,10 @@ class MainActivity : AppCompatActivity() {
     private val repoInfoMap = mutableMapOf<String, RepoInfo>()
     private val repoStarredMap = mutableMapOf<String, Boolean>()
 
+    /**
+     * Activity创建时的初始化入口方法，负责设置布局、验证登录状态、请求存储权限，
+     * 以及初始化左右面板视图和底部工具栏，同时加载远程仓库列表和本地文件目录。
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -108,6 +118,10 @@ class MainActivity : AppCompatActivity() {
         loadLocalFiles()
     }
 
+    /**
+     * 初始化所有视图组件，包括工具栏、左右面板的路径栏、导航按钮、文件列表、
+     * 空状态视图、加载指示器以及下拉刷新控件，并为工具栏绑定导航和菜单点击事件。
+     */
     private fun initViews() {
         DragDividerView.leftPaneId = R.id.left_pane
         DragDividerView.rightPaneId = R.id.right_pane
@@ -142,6 +156,10 @@ class MainActivity : AppCompatActivity() {
         rightSwipe = findViewById(R.id.right_swipe)
     }
 
+    /**
+     * 配置左侧面板（远程仓库面板），设置下拉刷新监听、文件列表适配器、
+     * 点击和长按事件处理，以及前进后退同步等导航按钮的点击回调。
+     */
     private fun setupLeftPane() {
         leftSwipe.setColorSchemeResources(R.color.accent)
         leftSwipe.setOnRefreshListener {
@@ -163,6 +181,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 配置右侧面板（本地文件面板），设置下拉刷新监听、文件列表适配器、
+     * 点击和长按事件处理，以及前进后退上级目录等导航按钮的点击回调。
+     */
     private fun setupRightPane() {
         rightSwipe.setColorSchemeResources(R.color.accent)
         rightSwipe.setOnRefreshListener { loadLocalFiles() }
@@ -180,6 +202,10 @@ class MainActivity : AppCompatActivity() {
         addDoubleTapRefresh(rightFileList) { loadLocalFiles() }
     }
 
+    /**
+     * 配置底部工具栏按钮，绑定前进、后退、同步、上级目录、上传和更多菜单
+     * 等按钮的点击事件处理，统一操作当前活动面板。
+     */
     private fun setupBottomBar() {
         findViewById<View>(R.id.btn_back).setOnClickListener { navigateBack(activePane) }
         findViewById<View>(R.id.btn_forward).setOnClickListener { navigateForward(activePane) }
@@ -189,12 +215,20 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btn_more).setOnClickListener { v -> showMoreMenu(v) }
     }
 
+    /**
+     * 设置当前活动面板，通过调整左右面板的透明度来视觉区分哪个面板处于活动状态，
+     * 同时将全局活动面板引用切换到指定的面板状态对象。
+     */
     private fun setActivePane(pane: FilePaneState) {
         activePane = pane
         leftPane.alpha = if (pane == leftState) 1.0f else 0.85f
         rightPane.alpha = if (pane == rightState) 1.0f else 0.85f
     }
 
+    /**
+     * 从GitHub API异步加载当前用户的仓库列表和已收藏的仓库列表，合并去重后
+     * 转换为文件信息列表展示在左侧面板中，同时维护仓库信息映射表和收藏状态映射表。
+     */
     private fun loadRepos() {
         showLoader(leftState, true)
         executor.execute {
@@ -247,6 +281,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 异步加载指定面板对应的远程仓库目录下的文件列表，根据当前路径和分支信息
+     * 从GitHub API获取文件内容，经过排序过滤后更新面板的文件列表显示。
+     */
     fun loadRemoteFiles(pane: FilePaneState) {
         showLoader(pane, true)
         updatePaneViews(pane)
@@ -274,6 +312,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 根据面板当前的排序模式和隐藏文件设置，对文件列表进行排序和过滤处理，
+     * 支持按名称、大小、日期的升序降序排列，以及隐藏文件的显示切换。
+     */
     private fun sortAndFilter(pane: FilePaneState, files: List<FileInfo>): List<FileInfo> {
         var result = files
         if (!pane.showHidden) {
@@ -289,6 +331,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 加载本地存储设备上的文件目录列表，根据当前路径读取文件系统中的文件和文件夹，
+     * 经过排序过滤后更新右侧面板的文件列表显示，支持路径标准化处理。
+     */
     private fun loadLocalFiles() {
         rightSwipe.isRefreshing = false
         updatePaneViews(rightState)
@@ -318,6 +364,10 @@ class MainActivity : AppCompatActivity() {
         updatePaneViews(rightState)
     }
 
+    /**
+     * 处理文件列表项的单击事件，根据文件类型执行不同操作：仓库类型打开仓库详情，
+     * 目录类型进入子目录，文件类型打开远程或本地文件编辑器。
+     */
     private fun onFileClick(pane: FilePaneState, file: FileInfo) {
         setActivePane(pane)
         when {
@@ -339,12 +389,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 处理文件列表项的长按事件，忽略仓库类型的文件，激活当前面板并弹出文件上下文菜单，
+     * 提供重命名、删除、复制链接等文件操作选项。
+     */
     private fun onFileLongClick(pane: FilePaneState, file: FileInfo) {
         if (file.type == "repo") return
         setActivePane(pane)
         showFileContextMenu(pane, file)
     }
 
+    /**
+     * 打开指定的GitHub仓库，初始化面板的仓库所有者、仓库名称、分支和收藏状态，
+     * 重置导航历史记录后加载该仓库的远程文件列表。
+     */
     fun openRepo(pane: FilePaneState, owner: String, repo: String, branch: String, isStarred: Boolean) {
         pane.repoOwner = owner
         pane.repoName = repo
@@ -358,10 +416,17 @@ class MainActivity : AppCompatActivity() {
         loadRemoteFiles(pane)
     }
 
+    /**
+     * 便捷方法，在左侧面板中打开指定的GitHub仓库，将参数委托给openRepo方法执行实际的仓库加载操作。
+     */
     fun enterRepo(owner: String, repo: String, branch: String, isStarred: Boolean) {
         openRepo(leftState, owner, repo, branch, isStarred)
     }
 
+    /**
+     * 根据仓库所有者和仓库名称在左侧打开对应仓库，从仓库信息映射表中获取默认分支
+     * 和收藏状态，然后调用openRepo方法完成仓库的打开操作。
+     */
     fun openRepoByOwner(owner: String, repo: String) {
         val repoInfo = repoInfoMap[repo]
         val isStarred = repoStarredMap[repo] ?: false
@@ -369,6 +434,10 @@ class MainActivity : AppCompatActivity() {
         openRepo(leftState, owner, repo, branch, isStarred)
     }
 
+    /**
+     * 打开远程仓库中的文件，根据文件扩展名判断是否为媒体文件：媒体文件使用预览活动展示，
+     * 其他文件使用编辑器活动打开，并传递仓库和文件的完整元数据信息。
+     */
     private fun openRemoteFile(pane: FilePaneState, file: FileInfo) {
         val ext = file.getExtension()
         if (isMediaFile(ext)) {
@@ -395,6 +464,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 打开本地存储设备上的文件，首先验证文件是否存在，然后根据文件扩展名判断类型，
+     * 媒体文件使用预览活动查看，其他文件使用编辑器活动打开进行编辑。
+     */
     private fun openLocalFile(file: FileInfo) {
         val fullPath = File(StoragePath.getBasePath(), file.path)
         if (!fullPath.exists()) {
@@ -418,10 +491,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 判断给定的文件扩展名是否属于媒体文件类型，支持常见的图片格式（如jpg、png、gif等），
+     * 视频格式（如mp4、avi、mkv等）和音频格式（如mp3、wav、ogg等）。
+     */
     private fun isMediaFile(ext: String): Boolean {
         return setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico", "mp4", "avi", "mkv", "mov", "wmv", "webm", "flv", "mp3", "wav", "ogg", "m4a", "aac", "flac", "wma").contains(ext.lowercase())
     }
 
+    /**
+     * 执行面板的后退导航操作，检查导航历史栈是否可以后退，如果可以则弹出历史记录
+     * 并加载对应的文件目录，远程面板在仓库根目录时返回仓库列表界面。
+     */
     private fun navigateBack(pane: FilePaneState) {
         if (!pane.canGoBack()) return
         pane.goBack()
@@ -431,12 +512,20 @@ class MainActivity : AppCompatActivity() {
         } else loadLocalFiles()
     }
 
+    /**
+     * 执行面板的前进导航操作，检查导航历史栈是否可以前进，如果可以则加载之前后退
+     * 过的文件目录，恢复到用户之前浏览过的路径。
+     */
     private fun navigateForward(pane: FilePaneState) {
         if (!pane.canGoForward()) return
         pane.goForward()
         if (pane.isRemote) loadRemoteFiles(pane) else loadLocalFiles()
     }
 
+    /**
+     * 执行面板的上级目录导航操作，远程面板在仓库根目录时返回仓库列表，在子目录时
+     * 导航到父级目录；本地面板在有父级路径时导航到上级目录。
+     */
     private fun navigateUp(pane: FilePaneState) {
         if (pane.isRemote) {
             if (pane.currentPath.isEmpty() && pane.repoOwner.isNotEmpty()) {
@@ -464,6 +553,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 将源面板的当前路径同步到对面的面板，如果源面板是远程面板则将路径映射到本地存储
+     * 并创建对应目录，自动切换右侧面板到相同路径并加载本地文件列表。
+     */
     private fun syncToOtherPane(source: FilePaneState) {
         if (source.isRemote && source.repoOwner.isNotEmpty()) {
             val remotePath = source.currentPath
@@ -481,6 +574,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示文件上传对话框，验证左侧面板是否已选择仓库且本地仓库已同步，然后使用
+     * UploadManager准备上传文件列表并异步执行批量上传操作，显示进度和结果。
+     */
     private fun showUploadDialog() {
         if (leftState.repoOwner.isEmpty()) {
             Toast.makeText(this, "Select a repo first", Toast.LENGTH_SHORT).show()
@@ -523,6 +620,10 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    /**
+     * 显示更多操作菜单弹窗，包含搜索仓库、新建文件、新建文件夹、多选模式、
+     * 排序切换、隐藏文件切换、收藏仓库、分支管理等丰富的功能选项。
+     */
     private fun showMoreMenu(anchor: View) {
         val popup = PopupMenu(this, anchor)
         popup.menu.add(0, 1, 0, "Search Repos")
@@ -572,6 +673,10 @@ class MainActivity : AppCompatActivity() {
         popup.show()
     }
 
+    /**
+     * 循环切换当前活动面板的排序模式，按照名称升序、名称降序、大小升序、大小降序、
+     * 日期升序、日期降序的顺序依次切换，并刷新文件列表显示。
+     */
     private fun cycleSortMode() {
         activePane.sortMode = when (activePane.sortMode) {
             SortMode.NAME_ASC -> SortMode.NAME_DESC
@@ -586,6 +691,10 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Sort: ${activePane.sortMode}", Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * 切换当前活动面板的隐藏文件显示状态，以点号开头的文件和文件夹被视为隐藏文件，
+     * 切换后重新加载并刷新文件列表以反映新的显示过滤规则。
+     */
     private fun toggleHiddenFiles() {
         activePane.showHidden = !activePane.showHidden
         Toast.makeText(this, if (activePane.showHidden) "Showing hidden files" else "Hiding hidden files", Toast.LENGTH_SHORT).show()
@@ -593,6 +702,10 @@ class MainActivity : AppCompatActivity() {
         else if (!activePane.isRemote) loadLocalFiles()
     }
 
+    /**
+     * 显示创建新仓库的对话框，包含仓库名称和描述的输入字段，用户确认后通过GitHub API
+     * 异步创建新仓库，成功后自动刷新仓库列表以显示新创建的仓库。
+     */
     private fun showCreateRepoDialog() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -626,6 +739,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * 显示应用设置对话框，展示应用版本信息、当前登录用户名、令牌信息、左右面板的
+     * 排序模式和隐藏文件状态，同时提供登出功能入口。
+     */
     private fun showSettingsDialog() {
         val userLogin = AuthManager.getUserLogin() ?: "Unknown"
         val sb = StringBuilder()
@@ -658,6 +775,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * 切换当前活动面板的多选模式，如果已处于多选模式则清除所有选中项并退出，
+     * 否则进入多选模式允许用户点击选择多个文件进行批量操作。
+     */
     private fun toggleMultiSelectMode() {
         val adapter = getAdapter(activePane)
         if (adapter.multiSelectMode) {
@@ -669,6 +790,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 批量删除多选模式下选中的所有文件，远程文件通过API逐个删除并统计成功失败数量，
+     * 本地文件直接从文件系统删除，操作完成后清除选中状态并刷新文件列表。
+     */
     private fun batchDeleteSelected() {
         val adapter = getAdapter(activePane)
         val selected = adapter.getMultiSelectedFiles()
@@ -710,6 +835,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null).show()
     }
 
+    /**
+     * 切换当前远程仓库的收藏状态，如果已收藏则取消收藏，未收藏则添加收藏，
+     * 通过GitHub API异步执行操作并更新仓库信息映射表中的收藏状态。
+     */
     private fun toggleStarRepo() {
         val pane = activePane
         if (pane.repoOwner.isEmpty()) return
@@ -731,6 +860,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示分支选择器对话框，异步获取当前仓库的所有分支列表，用户选择新分支后
+     * 切换到该分支并重置导航路径，重新加载远程文件列表以展示新分支的内容。
+     */
     private fun showBranchSelector() {
         val pane = activePane
         if (pane.repoOwner.isEmpty()) return
@@ -769,12 +902,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示搜索对话框，创建SearchDialog实例并设置仓库选择监听回调，
+     * 当用户在搜索结果中选择仓库时自动调用openRepoByOwner方法打开对应仓库。
+     */
     private fun showSearchDialog() {
         val dialog = SearchDialog()
         dialog.setOnRepoSelectedListener { owner, repo -> openRepoByOwner(owner, repo) }
         dialog.show(supportFragmentManager, "search")
     }
 
+    /**
+     * 显示创建新分支的对话框，展示当前分支作为参考基准，用户输入新分支名称后
+     * 通过GitHub API基于当前分支创建新分支，成功后自动切换到新分支并加载文件列表。
+     */
     private fun showCreateBranchDialog() {
         val pane = activePane
         if (pane.repoOwner.isEmpty()) return
@@ -821,6 +962,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * 显示新建文件对话框，用户输入文件名后根据当前面板类型分别执行远程仓库文件创建
+     * 或本地文件创建操作，创建成功后自动刷新对应的文件列表显示。
+     */
     private fun showNewFileDialog() {
         val pane = activePane
         if (pane.isRemote && pane.repoOwner.isEmpty()) {
@@ -857,6 +1002,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null).show()
     }
 
+    /**
+     * 显示新建文件夹对话框，用户输入文件夹名称后根据当前面板类型分别执行远程仓库
+     * 文件夹创建或本地文件夹创建操作，创建成功后自动刷新对应的文件列表显示。
+     */
     private fun showNewFolderDialog() {
         val pane = activePane
         if (pane.isRemote && pane.repoOwner.isEmpty()) {
@@ -893,6 +1042,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null).show()
     }
 
+    /**
+     * 显示文件上下文操作菜单，根据文件所在面板类型（远程或本地）动态构建操作选项列表，
+     * 包括查看信息、重命名、复制链接、删除、下载、分享、Git日志等操作。
+     */
     private fun showFileContextMenu(pane: FilePaneState, file: FileInfo) {
         val options = mutableListOf("Info", "Rename", "Copy Link", "Copy Path")
         if (pane.isRemote) {
@@ -923,6 +1076,10 @@ class MainActivity : AppCompatActivity() {
             }.show()
     }
 
+    /**
+     * 显示文件详细信息对话框，展示文件名、类型、大小、路径等基本信息，远程文件额外显示
+     * SHA值、仓库名和分支信息，本地文件显示最后修改时间，并提供复制路径和SHA的操作。
+     */
     private fun showFileInfo(pane: FilePaneState, file: FileInfo) {
         val sb = StringBuilder()
         sb.appendLine("Name: ${file.name}")
@@ -957,6 +1114,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * 将字节数格式化为人类可读的文件大小字符串，自动选择合适的单位（B、KB、MB、GB），
+     * 保留一位小数精度，用于在文件信息展示中提供友好的文件大小显示。
+     */
     private fun formatFileSize(bytes: Long): String {
         if (bytes == 0L) return "0 B"
         val units = arrayOf("B", "KB", "MB", "GB")
@@ -966,6 +1127,10 @@ class MainActivity : AppCompatActivity() {
         return "%.1f %s".format(size, units[unitIndex])
     }
 
+    /**
+     * 将本地文件复制到远程仓库，验证本地仓库是否已选择且文件存在后，读取文件内容
+     * 并通过API在远程仓库的当前路径下创建同名文件，成功后刷新远程文件列表。
+     */
     private fun copyLocalToRemote(pane: FilePaneState, file: FileInfo) {
         if (leftState.repoOwner.isEmpty()) {
             Toast.makeText(this, "Select a repo first", Toast.LENGTH_SHORT).show()
@@ -990,6 +1155,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 下载远程仓库中的文件到本地存储，通过GitHub API获取文件内容（支持base64解码），
+     * 保存到本地对应路径后刷新本地文件列表，同时显示下载进度和结果提示。
+     */
     private fun downloadRemoteFile(pane: FilePaneState, file: FileInfo) {
         if (file.isDir()) {
             Toast.makeText(this, "Cannot download directories yet", Toast.LENGTH_SHORT).show()
@@ -1022,6 +1191,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示远程文件的Git提交历史日志，通过API获取指定文件的最近15条提交记录，
+     * 以对话框形式展示提交消息、作者和提交SHA的简短信息。
+     */
     private fun showGitLog(pane: FilePaneState, file: FileInfo) {
         if (file.isDir()) {
             Toast.makeText(this, "Git log for directories not supported", Toast.LENGTH_SHORT).show()
@@ -1058,6 +1231,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 通过系统分享功能分享本地文件，使用FileProvider获取文件的URI对象，
+     * 创建ACTION_SEND意图并通过系统分享选择器让用户选择分享目标应用。
+     */
     private fun shareLocalFile(file: FileInfo) {
         val localFile = File(StoragePath.getBasePath(), file.path)
         if (!localFile.exists()) {
@@ -1073,6 +1250,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(android.content.Intent.createChooser(shareIntent, "Share"))
     }
 
+    /**
+     * 复制文件的完整路径到系统剪贴板，远程文件生成包含仓库所有者、仓库名和文件路径的
+     * 完整URL路径，本地文件生成绝对路径，方便用户粘贴使用。
+     */
     private fun copyFilePath(pane: FilePaneState, file: FileInfo) {
         val fullPath = if (pane.isRemote && pane.repoOwner.isNotEmpty()) {
             "${pane.repoOwner}/${pane.repoName}/${file.path}"
@@ -1085,6 +1266,10 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Path copied", Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * 使用其他应用程序打开本地文件，通过FileProvider获取文件URI并创建VIEW意图，
+     * 让用户从系统中安装的应用程序中选择一个来打开指定的本地文件。
+     */
     private fun openLocalFileWith(file: FileInfo) {
         val localFile = File(StoragePath.getBasePath(), file.path)
         if (!localFile.exists()) {
@@ -1103,6 +1288,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示文件重命名对话框，将当前文件名预填充到输入框中供用户修改，
+     * 用户输入新名称后调用renameFile方法执行实际的重命名操作。
+     */
     private fun showRenameDialog(pane: FilePaneState, file: FileInfo) {
         val input = EditText(this).apply { setText(file.name); setPadding(60, 40, 60, 20) }
         AlertDialog.Builder(this).setTitle("Rename").setView(input)
@@ -1113,6 +1302,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null).show()
     }
 
+    /**
+     * 执行文件重命名操作，计算新的文件路径，如果是文件则读取原文件内容，
+     * 通过UploadManager在远程仓库中删除旧文件并创建新文件完成重命名。
+     */
     private fun renameFile(pane: FilePaneState, file: FileInfo, newName: String) {
         val parts = file.path.split("/")
         val parentPath = if (parts.size > 1) parts.dropLast(1).joinToString("/") else ""
@@ -1132,6 +1325,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 复制文件的GitHub网页链接到系统剪贴板，远程文件生成指向GitHub网页的完整URL，
+     * 本地文件直接复制文件路径，方便用户在浏览器中查看或分享文件链接。
+     */
     private fun copyFileLink(pane: FilePaneState, file: FileInfo) {
         val url = if (pane.isRemote)
             "https://github.com/${pane.repoOwner}/${pane.repoName}/blob/${pane.branch}/${file.path}"
@@ -1141,6 +1338,10 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * 显示删除确认对话框，用户确认后根据文件位置执行不同删除操作：远程文件通过
+     * API删除并刷新远程列表，本地文件直接删除文件系统中的文件并刷新本地列表。
+     */
     private fun confirmDelete(pane: FilePaneState, file: FileInfo) {
         AlertDialog.Builder(this)
             .setTitle(R.string.delete_title)
@@ -1166,8 +1367,16 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null).show()
     }
 
+    /**
+     * 根据传入的面板状态对象返回对应的文件列表适配器实例，左面板返回leftAdapter，
+     * 右面板返回rightAdapter，用于统一处理适配器相关操作。
+     */
     private fun getAdapter(pane: FilePaneState) = if (pane == leftState) leftAdapter else rightAdapter
 
+    /**
+     * 控制指定面板的加载状态指示器显示或隐藏，显示时隐藏文件列表和空状态视图，
+     * 隐藏时根据文件列表是否有内容决定显示文件列表还是隐藏所有视图。
+     */
     private fun showLoader(pane: FilePaneState, show: Boolean) {
         val loader = if (pane == leftState) leftLoader else rightLoader
         val list = if (pane == leftState) leftFileList else rightFileList
@@ -1185,12 +1394,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 显示指定面板的空状态视图并设置提示消息，同时隐藏文件列表，
+     * 用于在文件列表为空或加载失败时向用户展示友好的提示信息。
+     */
     private fun showEmpty(pane: FilePaneState, message: String) {
         val empty = if (pane == leftState) leftEmptyView else rightEmptyView
         val list = if (pane == leftState) leftFileList else rightFileList
         empty.text = message; empty.visibility = View.VISIBLE; list.visibility = View.GONE
     }
 
+    /**
+     * 为RecyclerView添加双击手势检测器，用户双击列表时触发指定的刷新回调操作，
+     * 通过OnItemTouchListener拦截触摸事件实现双击刷新功能。
+     */
     private fun addDoubleTapRefresh(recyclerView: RecyclerView, onRefresh: () -> Unit) {
         val gestureDetector = android.view.GestureDetector(this,
             object : android.view.GestureDetector.SimpleOnGestureListener() {
@@ -1209,6 +1426,10 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    /**
+     * 更新面板的视图状态，包括更新工具栏标题、构建面包屑导航路径、设置路径文本显示，
+     * 并根据文件列表是否有内容控制文件列表和空状态视图的可见性。
+     */
     private fun updatePaneViews(pane: FilePaneState) {
         val pathText = if (pane == leftState) leftPathText else rightPathText
         val list = if (pane == leftState) leftFileList else rightFileList
@@ -1283,6 +1504,10 @@ class MainActivity : AppCompatActivity() {
         if (pane.files.isNotEmpty()) { list.visibility = View.VISIBLE; empty.visibility = View.GONE }
     }
 
+    /**
+     * 显示路径编辑对话框，允许用户手动输入目标路径进行快速跳转，远程面板支持输入
+     * owner/repo/path格式的路径，本地面板支持输入绝对路径，跳转后重置导航历史。
+     */
     private fun showPathEditDialog(pane: FilePaneState) {
         val currentPath = if (pane.isRemote) {
             if (pane.repoOwner.isNotEmpty()) {
@@ -1335,6 +1560,10 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * 请求设备存储访问权限，Android 11及以上版本请求所有文件访问权限，
+     * 低版本请求读写外部存储权限，用户拒绝时提示并退出应用。
+     */
     private fun requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!android.os.Environment.isExternalStorageManager()) {
@@ -1353,6 +1582,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 处理权限请求结果回调，当所有请求的存储权限都被授予后，
+     * 调用StoragePath.ensureDirectories方法确保应用所需的本地存储目录已创建。
+     */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
